@@ -2,13 +2,15 @@ package web
 
 import (
 	"net/http"
+	"webook/internal/domain"
+	"webook/internal/service"
 
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	EmailReGexPattern    = "/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$/\n"
+	EmailReGexPattern    = "/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$/"
 	PasswordReGexPattern = "^(?=.*\\d)(?=.*[a-zA-Z])(?=.*[^\\da-zA-Z\\s]).{1,9}$"
 )
 
@@ -19,30 +21,32 @@ RegisterRouter方法 用来注册路由
 type UserHandler struct {
 	emailRegexExp    *regexp.Regexp
 	passwordRegexExp *regexp.Regexp
+	svc              *service.UserService
 }
 
-func NewUserHandler() *UserHandler {
+func NewUserHandler(svc *service.UserService) *UserHandler {
 	return &UserHandler{
 		emailRegexExp:    regexp.MustCompile(EmailReGexPattern, regexp.None),
 		passwordRegexExp: regexp.MustCompile(PasswordReGexPattern, regexp.None),
+		svc:              svc,
 	}
 }
 
 func (h *UserHandler) RegisterRouter(server *gin.Engine) {
 	/*
 		RESTfull 风格
-		server.POST("/user",h.SignUp)
-		server.PUT("/user",h.SignUp)
-		server.GET("/user/:id",h.Profile)
+		service.POST("/user.go",h.SignUp)
+		service.PUT("/user.go",h.SignUp)
+		service.GET("/user.go/:id",h.Profile)
 						 /:username
 
 	*/
 
 	/*	//POST方法 把前端数据推给后端
-		server.POST("/users/signup", h.SignUp)
-		server.POST("/users/login", h.Login)
-		server.POST("/users/edit", h.Edit)
-		server.GET("/users/profile", h.Profile)
+		service.POST("/users/signup", h.SignUp)
+		service.POST("/users/login", h.Login)
+		service.POST("/users/edit", h.Edit)
+		service.GET("/users/profile", h.Profile)
 	*/
 
 	//分组路由
@@ -83,16 +87,18 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	if !isEmail {
+	if isEmail {
+		println(isEmail)
 		ctx.String(http.StatusOK, "邮箱格式错误")
 		return
 	}
 	isPass, err := h.emailRegexExp.MatchString(PasswordReGexPattern)
 	if err != nil {
+		println(err)
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	if !isPass {
+	if isPass {
 		ctx.String(http.StatusOK, "密码格式错误，至少包含字母、数字、特殊字符，1-9位")
 		return
 	}
@@ -100,6 +106,15 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "两次密码不同")
 		return
 	}
+
+	if err := h.svc.SingUp(ctx, domain.User{
+		Email:    req.Email,
+		Password: req.Password,
+	}); err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+
 	ctx.String(http.StatusOK, "hello,正在登录...")
 }
 
