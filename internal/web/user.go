@@ -59,12 +59,12 @@ func (h *UserHandler) RegisterRouter(server *gin.Engine) {
 
 func (h *UserHandler) SignUp(ctx *gin.Context) {
 	//• 接收请求并校验 • 调用业务逻辑处理请求 • 根据业务逻辑处理结果返回响应
-	type SignUpReq struct {
+	type Req struct {
 		Email           string `json:"email"`
 		Password        string `json:"password"`
 		ConfirmPassword string `json:"confirmPassword"`
 	}
-	var req SignUpReq
+	var req Req
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
@@ -77,7 +77,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 			ctx.String(http.StatusOK, "系统错误")
 			return
 		}
-		if !isEmail {
+		if isEmail {
 			ctx.String(http.StatusOK, "邮箱格式错误")
 			return
 		}*/
@@ -107,18 +107,31 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.svc.SingUp(ctx, domain.User{
+	err := h.svc.SingUp(ctx, domain.User{
 		Email:    req.Email,
 		Password: req.Password,
-	}); err != nil {
+	})
+	switch err {
+	case nil:
+		ctx.String(http.StatusOK, "hello,正在登录...")
+	case service.ErrDuplicateEmail:
+		ctx.String(http.StatusOK, "邮箱冲突,请换一个")
+	default:
 		ctx.String(http.StatusOK, "系统错误")
-		return
 	}
 
-	ctx.String(http.StatusOK, "hello,正在登录...")
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
+	type Req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	h.svc.Login(ctx)
 	ctx.JSON(http.StatusOK, "login")
 }
 

@@ -29,18 +29,7 @@ func initUserHandler(db *gorm.DB, server *gin.Engine) {
 	hdl := web.NewUserHandler(us)
 	hdl.RegisterRouter(server)
 }
-func initDB() *gorm.DB {
-	dsn := "root:root@tcp(localhost:13316)/webook"
-	db, err := gorm.Open(mysql.Open(dsn))
-	if err != nil {
-		panic(err)
-	}
-	err = dao.InitTables(db)
-	if err != nil {
-		panic(err)
-	}
-	return db
-}
+
 func initWebServer() *gin.Engine {
 	server := gin.Default()
 	server.Use(cors.New(cors.Config{
@@ -57,4 +46,17 @@ func initWebServer() *gin.Engine {
 		MaxAge: 12 * time.Hour,
 	}))
 	return server
+}
+
+func initDB() *gorm.DB {
+	dsn := "root:root@tcp(localhost:13316)/webook"
+	db, err := gorm.Open(mysql.Open(dsn))
+	if err != nil {
+		panic(err)
+	}
+	err = dao.InitTables(db)
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
