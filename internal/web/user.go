@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"net/http"
 	"webook/internal/domain"
 	"webook/internal/service"
@@ -107,14 +108,14 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	err := h.svc.SingUp(ctx, domain.User{
+	err = h.svc.SingUp(ctx, domain.User{
 		Email:    req.Email,
 		Password: req.Password,
 	})
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		ctx.String(http.StatusOK, "hello,正在登录...")
-	case service.ErrDuplicateEmail:
+	case errors.Is(err, service.ErrDuplicateEmail):
 		ctx.String(http.StatusOK, "邮箱冲突,请换一个")
 	default:
 		ctx.String(http.StatusOK, "系统错误")
@@ -131,8 +132,19 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	h.svc.Login(ctx)
-	ctx.JSON(http.StatusOK, "login")
+	_, err := h.svc.Login(ctx, req.Email, req.Password)
+	switch err {
+	case nil:
+		ctx.String(http.StatusOK, "登录成功")
+	case service.ErrInvalidUserOrPassword:
+		ctx.String(http.StatusOK, "用户名或者密码不对")
+	default:
+		ctx.String(http.StatusOK, "登录成功")
+	}
+	if err != nil {
+		return
+	}
+
 }
 
 // Edit 修改
