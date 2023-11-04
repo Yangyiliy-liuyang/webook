@@ -8,7 +8,8 @@ import (
 
 var (
 	ErrDuplicateEmail = dao.ErrDuplicateEmail
-	ErrUserNotFound   = dao.ErrRecordNotFound
+	// todo repository是与业务强相关的，是一定要
+	ErrUserNotFound = dao.ErrRecordNotFound
 )
 
 type UserRepository struct {

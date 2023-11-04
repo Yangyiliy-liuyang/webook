@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	ErrDuplicateEmail        = repository.ErrDuplicateEmail
+	ErrDuplicateEmail = repository.ErrDuplicateEmail
+	// todo 含糊
 	ErrInvalidUserOrPassword = errors.New("用户或者密码不正确")
 )
 
@@ -38,5 +39,8 @@ func (svc *UserService) Login(ctx context.Context, email string, password string
 		return domain.User{}, err
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
-	return u, err
+	if err != nil {
+		return domain.User{}, err
+	}
+	return u, nil
 }

@@ -1,12 +1,15 @@
 package main
 
 import (
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"gorm.io/gorm"
 	"strings"
 	"time"
 	"webook/internal/repository"
 	"webook/internal/repository/dao"
 	"webook/internal/service"
+	"webook/internal/service/middleware"
 	"webook/internal/web"
 
 	"github.com/gin-contrib/cors"
@@ -45,6 +48,10 @@ func initWebServer() *gin.Engine {
 		},
 		MaxAge: 12 * time.Hour,
 	}))
+	login := &middleware.LoginMiddlewareBuilder{}
+	// todo 存储数据的 userId直接存在cookie中
+	store := cookie.NewStore([]byte("secret"))
+	server.Use(sessions.Sessions("userId", store), login.CheckLogin())
 	return server
 }
 
