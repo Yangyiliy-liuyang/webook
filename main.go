@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"gorm.io/gorm"
 	"strings"
 	"time"
@@ -50,8 +50,23 @@ func initWebServer() *gin.Engine {
 	}))
 	login := &middleware.LoginMiddlewareBuilder{}
 	// todo 存储数据的 userId直接存在cookie中
-	store := cookie.NewStore([]byte("secret"))
-	server.Use(sessions.Sessions("userId", store), login.CheckLogin())
+	//  单机单实例部署 考虑基于内存的memstore实现，多实例部署，redis
+	//store := cookie.NewStore([]byte("secret"))
+	//memstore 是基于内存实现的
+	//参数一是authentication key 身份验证
+	//参数二encryption key 数据加密
+	// + 授权(权限控制)就是信息安全的三个核心概念
+	//最好64或者32位
+	//百度 -》 生成密码 -》 复制粘贴
+	//store := memstore.NewStore([]byte("05kcS4LEzQcepWhpjjas07YNzJgxL93a"),
+	//	[]byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgX"))
+	store, err := redis.NewStore(16, "tcp", "localhost:6379",
+		"", []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgX"),
+		[]byte("05kcS4LEzQcepWhpjjas07YNzJgxL93a"))
+	if err != nil {
+		panic(err)
+	}
+	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
 	return server
 }
 
