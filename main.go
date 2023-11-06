@@ -36,7 +36,7 @@ func initUserHandler(db *gorm.DB, server *gin.Engine) {
 func initWebServer() *gin.Engine {
 	server := gin.Default()
 	server.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:3030"},
+		//AllowOrigins: []string{"http://localhost:3030"},
 		AllowHeaders: []string{"Content-Type", "Authorization"},
 		//允许前端访问后端响应中带的头部
 		ExposeHeaders:    []string{"X-Jwt-Token"},

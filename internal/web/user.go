@@ -185,10 +185,12 @@ func (h *UserHandler) LoginJST(ctx *gin.Context) {
 			RegisteredClaims: jwt.RegisteredClaims{
 				// 30分钟过期
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+				Issuer:    "webook",
 			}}
+		//使用指定的签名方法创建
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
 		// token 是结构体，改成jwt字节切片传给前端
-		tokenString, err := token.SignedString(JWTKey)
+		tokenString, err := token.SignedString([]byte(JWTKey))
 		if err != nil {
 			ctx.String(http.StatusOK, "系统错误")
 		}
@@ -201,7 +203,7 @@ func (h *UserHandler) LoginJST(ctx *gin.Context) {
 	}
 }
 
-var JWTKey = []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgX")
+const JWTKey = "Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgX"
 
 type UserClaims struct {
 	jwt.RegisteredClaims
