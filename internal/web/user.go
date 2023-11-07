@@ -179,10 +179,11 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	switch {
 	case err == nil:
 		uc := UserClaims{
-			Uid: u.Id,
+			Uid:       u.Id,
+			UserAgent: ctx.GetHeader("User-Agent"),
 			RegisteredClaims: jwt.RegisteredClaims{
 				// 30分钟过期
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second)),
 				Issuer:    "webook",
 			}}
 		//使用指定的签名方法创建
@@ -205,5 +206,6 @@ var JWTKey = []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgX")
 
 type UserClaims struct {
 	jwt.RegisteredClaims
-	Uid int64
+	Uid       int64
+	UserAgent string
 }
