@@ -28,6 +28,7 @@ func (m *LoginJWTMilddlewareBuilder) CheckLoginJWT() gin.HandlerFunc {
 		}
 		segs := strings.Split(authCode, " ")
 		if len(segs) != 2 {
+			//格式错误
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
@@ -47,12 +48,17 @@ func (m *LoginJWTMilddlewareBuilder) CheckLoginJWT() gin.HandlerFunc {
 			return
 		}
 		expireTime := uc.ExpiresAt
-		if expireTime.Sub(time.Now()) < time.Second*50 {
+		if expireTime.Before(time.Now()) {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		//过期时间小于10分钟刷新
+		if expireTime.Sub(time.Now()) < time.Minute*10 {
 			uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute))
 			tokenStr, err = token.SignedString(web.JWTKey)
 			ctx.Header("x-jwt-token", tokenStr)
 			if err != nil {
-				//过期时间没有登录
+				//过期时间没有刷新，已登录
 				log.Println(err)
 			}
 		}

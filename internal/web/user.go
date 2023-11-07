@@ -57,7 +57,7 @@ func (h *UserHandler) RegisterRouter(server *gin.Engine) {
 	ug := server.Group("/users")
 	ug.POST("/signup", h.SignUp)
 	//ug.POST("/login", h.Login)
-	ug.POST("/login", h.LoginJST)
+	ug.POST("/login", h.LoginJWT)
 	ug.POST("/edit", h.Edit)
 	ug.GET("/profile", h.Profile)
 }
@@ -73,8 +73,6 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	println("------------")
-	println(req.Email, req.Password)
 	/*
 		// regex.Match()
 		isEmail, err := regexp.Match(EmailReGexPattern, []byte(req.Email))
@@ -118,7 +116,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 	})
 	switch {
 	case err == nil:
-		ctx.String(http.StatusOK, "hello,正在登录...")
+		ctx.String(http.StatusOK, "hello,正在注册...")
 	case errors.Is(err, service.ErrDuplicateEmail):
 		ctx.String(http.StatusOK, "邮箱冲突,请换一个")
 	default:
@@ -168,7 +166,7 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 
 }
 
-func (h *UserHandler) LoginJST(ctx *gin.Context) {
+func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	type Req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -190,7 +188,7 @@ func (h *UserHandler) LoginJST(ctx *gin.Context) {
 		//使用指定的签名方法创建
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
 		// token 是结构体，改成jwt字节切片传给前端
-		tokenString, err := token.SignedString([]byte(JWTKey))
+		tokenString, err := token.SignedString(JWTKey)
 		if err != nil {
 			ctx.String(http.StatusOK, "系统错误")
 		}
@@ -203,7 +201,7 @@ func (h *UserHandler) LoginJST(ctx *gin.Context) {
 	}
 }
 
-const JWTKey = "Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgX"
+var JWTKey = []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgX")
 
 type UserClaims struct {
 	jwt.RegisteredClaims

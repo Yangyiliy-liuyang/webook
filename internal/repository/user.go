@@ -35,6 +35,7 @@ func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (doma
 	}
 	return repo.toDomain(u), nil
 }
+
 func (repo *UserRepository) toDomain(u dao.User) domain.User {
 	return domain.User{
 		Id:       u.Id,
