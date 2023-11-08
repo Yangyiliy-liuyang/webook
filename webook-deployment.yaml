@@ -1,22 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webook-service
+  name: webook-record-service
 spec:
   # 3个副本
   replicas: 3
+  # selector 筛选器
   selector:
     matchLabels:
-      app: webook
+      app: webook-record
+  # template 模版
   template:
     metadata:
       labels:
-        app: webook
+        app: webook-record
     # 这个是Deployment管理的Pod的模拟
     spec:
       # Pod里面运行的所有的 container
       containers:
-        - name: webook
+        - name: webook-record
           image: yangyiliy/webook:v0.0.1
           ports:
             - containerPort: 8080
