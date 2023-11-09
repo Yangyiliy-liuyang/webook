@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
@@ -43,6 +44,18 @@ func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error)
 	return u, err
 }
 
+func (dao *UserDAO) InsertInfo(ctx context.Context, u User) error {
+	now := time.Now().UnixMilli()
+	u.Utime = now
+	return dao.db.WithContext(ctx).Updates(&u).Error
+}
+
+func (dao *UserDAO) FindById(ctx context.Context, uid int64) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("id=?", uid).First(&u).Error
+	return u, err
+}
+
 type User struct {
 	// TODO 为什么使用自增主键？
 	//数据库中的数据存储是一个树型结构，自增意味着树朝一个方向增长，id相邻的大概率在磁盘上也是相邻的
@@ -51,7 +64,9 @@ type User struct {
 	Id       int64  `gorm:"primaryKey,autoIncrement"`
 	Email    string `gorm:"unique"`
 	Password string
-
+	Nickname sql.NullString
+	Birthday sql.NullInt64
+	AboutMe  sql.NullString
 	//TODO 为什么不用time.time : UTC 0 的时区
 	// 整个系统内部都使用UTC 0 的时区，
 	// 在要返回给前端的时候才改成UTF8 或者直接交给前端处理

@@ -44,3 +44,7 @@ func (svc *UserService) Login(ctx context.Context, email string, password string
 	}
 	return u, nil
 }
+
+func (svc *UserService) UpdateUserInfo(ctx context.Context, user domain.User) error {
+	return svc.repo.UpdateUserInfo(ctx, user)
+}

@@ -8,7 +8,6 @@ import (
 	"webook/internal/service"
 
 	regexp "github.com/dlclark/regexp2"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -125,44 +124,77 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 
 }
 
-func (h *UserHandler) Login(ctx *gin.Context) {
-	type Req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+//
+//func (h *UserHandler) Login(ctx *gin.Context) {
+//	type Req struct {
+//		Email    string `json:"email"`
+//		Password string `json:"password"`
+//	}
+//	var req Req
+//	if err := ctx.Bind(&req); err != nil {
+//		return
+//	}
+//	u, err := h.svc.Login(ctx, req.Email, req.Password)
+//	switch {
+//	case err == nil:
+//		sess := sessions.Default(ctx)
+//		sess.Set("userId", u.Id)
+//		sess.Options(sessions.Options{
+//			//十五分钟
+//			MaxAge: 900,
+//		})
+//		err := sess.Save()
+//		if err != nil {
+//			ctx.String(http.StatusOK, "系统错误")
+//			return
+//		}
+//		ctx.String(http.StatusOK, "登录成功")
+//	case errors.Is(err, service.ErrInvalidUserOrPassword):
+//		ctx.String(http.StatusOK, "用户名或者密码不对")
+//	default:
+//		ctx.String(http.StatusOK, "系统错误")
+//	}
+//}
+
+// Edit 用户编译信息
+func (h *UserHandler) Edit(ctx *gin.Context) {
+	type Rep struct {
+		Nickname string `json:"nickname"`
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
 	}
-	var req Req
+	var req Rep
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	u, err := h.svc.Login(ctx, req.Email, req.Password)
-	switch {
-	case err == nil:
-		sess := sessions.Default(ctx)
-		sess.Set("userId", u.Id)
-		sess.Options(sessions.Options{
-			//十五分钟
-			MaxAge: 900,
-		})
-		err := sess.Save()
-		if err != nil {
-			ctx.String(http.StatusOK, "系统错误")
-			return
-		}
-		ctx.String(http.StatusOK, "登录成功")
-	case errors.Is(err, service.ErrInvalidUserOrPassword):
-		ctx.String(http.StatusOK, "用户名或者密码不对")
-	default:
-		ctx.String(http.StatusOK, "系统错误")
+	birthday, err := time.Parse(time.DateOnly, req.Birthday)
+	if err != nil {
+		ctx.String(http.StatusOK, "日期格式不正确")
+		return
 	}
-}
 
-// Edit 修改
-func (h *UserHandler) Edit(ctx *gin.Context) {
+	err = h.svc.UpdateUserInfo(ctx, domain.User{
+		Id:       1,
+		Nickname: req.Nickname,
+		Birthday: birthday,
+		AboutMe:  req.AboutMe,
+	})
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
 	ctx.String(http.StatusOK, "edit")
 }
 
 // Profile 拿到用户基本信息
 func (h *UserHandler) Profile(ctx *gin.Context) {
+	type profile struct {
+		Email    string
+		Nickname string
+		Birthday string
+		AboutMe  string
+	}
+	// todo Get Profile
 
 }
 
@@ -183,7 +215,7 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 			UserAgent: ctx.GetHeader("User-Agent"),
 			RegisteredClaims: jwt.RegisteredClaims{
 				// 30分钟过期
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second)),
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
 				Issuer:    "webook",
 			}}
 		//使用指定的签名方法创建
