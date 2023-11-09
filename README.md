@@ -6,3 +6,5 @@ gin + gorm + cors + regex + bcrypt + sessions + redis + JWT +
 ## 启动
 
 ### 登录注册 JWT会话管理 限流 使用UserAgent增强JWT安全性
+### docker kubernetes部署
+
