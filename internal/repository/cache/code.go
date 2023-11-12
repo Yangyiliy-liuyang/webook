@@ -54,7 +54,7 @@ func (c *CodeCache) Verify(ctx context.Context, biz, phone, code string) (bool, 
 	case -1:
 		return false, ErrCodeVerifyTooMany
 	default:
-		// 发送cg
+		// 发送成功
 		return true, nil
 	}
 }

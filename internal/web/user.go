@@ -15,6 +15,7 @@ import (
 const (
 	EmailReGexPattern    = "/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$/"
 	PasswordReGexPattern = "^(?=.*\\d)(?=.*[a-zA-Z])(?=.*[^\\da-zA-Z\\s]).{1,9}$"
+	bizLogin             = "login"
 )
 
 /*
@@ -25,13 +26,15 @@ type UserHandler struct {
 	emailRegexExp    *regexp.Regexp
 	passwordRegexExp *regexp.Regexp
 	svc              *service.UserService
+	codeSvc          *service.CodeService
 }
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
 	return &UserHandler{
 		emailRegexExp:    regexp.MustCompile(EmailReGexPattern, regexp.None),
 		passwordRegexExp: regexp.MustCompile(PasswordReGexPattern, regexp.None),
 		svc:              svc,
+		codeSvc:          codeSvc,
 	}
 }
 
@@ -59,6 +62,10 @@ func (h *UserHandler) RegisterRouter(server *gin.Engine) {
 	ug.POST("/login", h.LoginJWT)
 	ug.POST("/edit", h.Edit)
 	ug.GET("/profile", h.Profile)
+	//触发发送验证码
+	ug.POST("/login_sms/code/send", h.SendSSMLoginCode)
+	//效验验证码
+	ug.POST("/login_sms", h.LoginSSM)
 }
 
 func (h *UserHandler) SignUp(ctx *gin.Context) {
@@ -172,7 +179,7 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "日期格式不正确")
 		return
 	}
-
+	// todo token中取出Id
 	err = h.svc.UpdateUserInfo(ctx, domain.User{
 		Id:       1,
 		Nickname: req.Nickname,
@@ -191,10 +198,13 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 	type profile struct {
 		Email    string
 		Nickname string
+		Phone    string
 		Birthday string
 		AboutMe  string
 	}
-	// todo Get Profile
+	// todo token中取出Id
+	//var user profile
+	//h.svc.GetUserInfo(ctx)
 
 }
 
@@ -210,22 +220,7 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	u, err := h.svc.Login(ctx, req.Email, req.Password)
 	switch {
 	case err == nil:
-		uc := UserClaims{
-			Uid:       u.Id,
-			UserAgent: ctx.GetHeader("User-Agent"),
-			RegisteredClaims: jwt.RegisteredClaims{
-				// 30分钟过期
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-				Issuer:    "webook",
-			}}
-		//使用指定的签名方法创建
-		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-		// token 是结构体，改成jwt字节切片传给前端
-		tokenString, err := token.SignedString(JWTKey)
-		if err != nil {
-			ctx.String(http.StatusOK, "系统错误")
-		}
-		ctx.Header("x-jwt-token", tokenString)
+		h.setTokenByJWT(ctx, u.Id)
 		ctx.String(http.StatusOK, "登录成功")
 	case errors.Is(err, service.ErrInvalidUserOrPassword):
 		ctx.String(http.StatusOK, "用户名或者密码不对")
@@ -240,4 +235,95 @@ type UserClaims struct {
 	jwt.RegisteredClaims
 	Uid       int64
 	UserAgent string
+}
+
+func (h *UserHandler) setTokenByJWT(ctx *gin.Context, uid int64) {
+	uc := UserClaims{
+		Uid:       uid,
+		UserAgent: ctx.GetHeader("User-Agent"),
+		RegisteredClaims: jwt.RegisteredClaims{
+			// 30分钟过期
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			Issuer:    "webook",
+		}}
+	//使用指定的签名方法创建
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
+	// token 是结构体，改成jwt字节切片传给前端
+	tokenString, err := token.SignedString(JWTKey)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+	}
+	ctx.Header("x-jwt-token", tokenString)
+}
+
+func (h *UserHandler) SendSSMLoginCode(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	if req.Phone == "" {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "请输入手机号码",
+		})
+		return
+	}
+	err := h.codeSvc.Send(ctx, bizLogin, req.Phone)
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, Result{
+			Code: 200,
+			Msg:  "发送成功",
+		})
+		return
+	case service.ErrCodeSendTooMany:
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "短信发送太频繁",
+			Data: nil,
+		})
+	default:
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+	}
+}
+
+func (h *UserHandler) LoginSSM(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+		Code  string `json:"code"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	if !ok {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "验证码错误，请重新输入。",
+		})
+		return
+	}
+	u, err := h.svc.FindOrCreate(ctx, req.Phone)
+	if err != nil {
+		return
+	}
+	h.setTokenByJWT(ctx, u.Id)
+	ctx.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "验证成功",
+	})
 }

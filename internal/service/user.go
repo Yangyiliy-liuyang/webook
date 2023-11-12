@@ -48,3 +48,19 @@ func (svc *UserService) Login(ctx context.Context, email string, password string
 func (svc *UserService) UpdateUserInfo(ctx context.Context, user domain.User) error {
 	return svc.repo.UpdateUserInfo(ctx, user)
 }
+
+func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+	u, err := svc.repo.FindByPhone(ctx, phone)
+	if !errors.Is(err, repository.ErrUserNotFound) {
+		//err!=nil 系统错误 或者 err==nil 找到
+		return u, err
+	}
+	err = svc.repo.Create(ctx, domain.User{
+		Phone: phone,
+	})
+	if err != nil {
+		return domain.User{}, err
+	}
+	// todo
+
+}

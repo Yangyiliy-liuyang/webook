@@ -9,5 +9,6 @@ docker compose up
 ### 登录注册 JWT会话管理 限流 使用UserAgent增强JWT安全性
 ### docker kubernetes部署
 ### 对Profile redis缓存 异步
-### 短信登录
+### 短信登录 验证码发送 校验
+### DDD领域理论
 

@@ -56,13 +56,21 @@ func (dao *UserDAO) FindById(ctx context.Context, uid int64) (User, error) {
 	return u, err
 }
 
+func (dao *UserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("phone=?", phone).First(&u).Error
+	return u, err
+}
+
 type User struct {
 	// TODO 为什么使用自增主键？
 	//数据库中的数据存储是一个树型结构，自增意味着树朝一个方向增长，id相邻的大概率在磁盘上也是相邻的
 	//，充分利用操作系统预读机制。
 	//不是自增则意味中间插入数据，页分页
-	Id       int64  `gorm:"primaryKey,autoIncrement"`
-	Email    string `gorm:"unique"`
+	Id int64 `gorm:"primaryKey,autoIncrement"`
+	// 代表一个可以为空的列
+	Email    sql.NullString `gorm:"unique"`
+	Phone    sql.NullString `gorm:"unique"`
 	Password string
 	Nickname sql.NullString
 	Birthday sql.NullInt64
