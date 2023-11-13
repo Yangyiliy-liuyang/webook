@@ -27,6 +27,7 @@ func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers
 	request.SmsSdkAppId = s.appId
 	request.SignName = s.SignName
 	request.TemplateId = common.StringPtr(tplId)
+	//模版参数
 	request.TemplateParamSet = common.StringPtrs(args)
 	request.PhoneNumberSet = common.StringPtrs(numbers)
 	response, err := s.client.SendSms(request)
@@ -35,13 +36,15 @@ func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers
 		fmt.Printf("An API error has returned: %s", err)
 		return err
 	}
+	// 遍历
 	for _, statusPtr := range response.Response.SendStatusSet {
 		if statusPtr == nil {
 			continue
 		}
 		status := *statusPtr
 		if status.Code != nil || *(status.Code) != "ok" {
-			//发送失败
+			//code不为OK，发送失败
+			// todo 直接解引用可能有问题
 			return fmt.Errorf("短信发送失败，code:%s,message:%s", *status.Code, *status.Message)
 		}
 	}

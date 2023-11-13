@@ -39,22 +39,28 @@ func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (doma
 	return du, nil
 }
 
-func (repo *UserRepository) toDomain(u dao.User) domain.User {
+func (repo *UserRepository) toDomain(du dao.User) domain.User {
 	return domain.User{
-		Id:       u.Id,
-		Email:    u.Email,
-		Password: u.Password,
+		Id:       du.Id,
+		Email:    du.Email.String,
+		Password: du.Password,
 	}
 }
 
 func (repo *UserRepository) UpdateUserInfo(ctx context.Context, u domain.User) error {
 	return repo.dao.InsertInfo(ctx, repo.domainToEntity(u))
 }
-func (repo *UserRepository) domainTorEntity(u domain.User) dao.User {
+func (repo *UserRepository) domainToEntity(u domain.User) dao.User {
 	return dao.User{
-		Id:    u.Id,
-		Email: u.Email,
-		Phone: u.Phone,
+		Id: u.Id,
+		Email: sql.NullString{
+			String: u.Email,
+			Valid:  u.Email != "",
+		},
+		Phone: sql.NullString{
+			String: u.Phone,
+			Valid:  u.Phone != "",
+		},
 		Birthday: sql.NullInt64{
 			Int64: u.Birthday.UnixMilli(),
 			Valid: !u.Birthday.IsZero(),

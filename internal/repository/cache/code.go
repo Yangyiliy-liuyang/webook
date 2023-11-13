@@ -22,11 +22,15 @@ type CodeCache struct {
 }
 
 func NewCodeCoche(cmd redis.Cmdable) *CodeCache {
-	return &CodeCache{cmd: cmd}
+	return &CodeCache{
+		cmd: cmd,
+	}
 }
+
 func (c *CodeCache) Set(ctx context.Context, biz, phone, code string) error {
 	res, err := c.cmd.Eval(ctx, luaSetCode, []string{c.key(biz, phone)}, code).Int()
 	if err != nil {
+		// 调用redis出现了问题
 		return err
 	}
 	switch res {
@@ -39,10 +43,11 @@ func (c *CodeCache) Set(ctx context.Context, biz, phone, code string) error {
 		return nil
 	}
 }
+
 func (c *CodeCache) key(biz, phone string) string {
 	return fmt.Sprintf("phone_code:%s:%s", biz, phone)
-
 }
+
 func (c *CodeCache) Verify(ctx context.Context, biz, phone, code string) (bool, error) {
 	res, err := c.cmd.Eval(ctx, luaVarifyCode, []string{c.key(biz, phone)}, code).Int()
 	if err != nil {
