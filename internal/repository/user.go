@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrDuplicateEmail = dao.ErrDuplicateEmail
+	ErrDuplicateUser = dao.ErrDuplicateUser
 	// todo repository是与业务强相关的，是一定要
 	ErrUserNotFound = dao.ErrRecordNotFound
 )
@@ -59,20 +59,12 @@ func (repo *UserRepository) domainToEntity(u domain.User) dao.User {
 		},
 		Phone: sql.NullString{
 			String: u.Phone,
-			Valid:  u.Phone != "",
+			// false 为空 true 为 不为空0
+			Valid: u.Phone != "",
 		},
-		Birthday: sql.NullInt64{
-			Int64: u.Birthday.UnixMilli(),
-			Valid: !u.Birthday.IsZero(),
-		},
-		Nickname: sql.NullString{
-			String: u.Nickname,
-			Valid:  u.Nickname != "",
-		},
-		AboutMe: sql.NullString{
-			String: u.AboutMe,
-			Valid:  u.AboutMe != "",
-		},
+		Birthday: u.Birthday.UnixMilli(),
+		Nickname: u.Nickname,
+		AboutMe:  u.AboutMe,
 		Password: u.Password,
 	}
 }

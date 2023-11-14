@@ -16,7 +16,8 @@ type LoginJWTMilddlewareBuilder struct {
 func (m *LoginJWTMilddlewareBuilder) CheckLoginJWT() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
-		if path == "/users/signup" || path == "/users/login" {
+		if path == "/users/signup" || path == "/users/login" ||
+			path == "/users/login_sms/code/send" || path == "/users/login_sms" {
 			return
 		}
 		// Bearer xxx

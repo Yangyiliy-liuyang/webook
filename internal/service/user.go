@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrDuplicateEmail = repository.ErrDuplicateEmail
+	ErrDuplicateUser = repository.ErrDuplicateUser
 	// todo 含糊
 	ErrInvalidUserOrPassword = errors.New("用户或者密码不正确")
 )
@@ -50,17 +50,23 @@ func (svc *UserService) UpdateUserInfo(ctx context.Context, user domain.User) er
 }
 
 func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+	// 兼顾性能
 	u, err := svc.repo.FindByPhone(ctx, phone)
 	if !errors.Is(err, repository.ErrUserNotFound) {
-		//err!=nil 系统错误 或者 err==nil 找到
+		//err!=nil 系统错误 或者 err==nil 已经找到
 		return u, err
 	}
+	//没找到，注册新用户
 	err = svc.repo.Create(ctx, domain.User{
 		Phone: phone,
 	})
-	if err != nil {
+	if err != nil || !errors.Is(err, ErrDuplicateUser) {
+		// 有错误，但是不是phone唯一索引错误   系统错误
 		return domain.User{}, err
 	}
-	// todo
-
+	// 用户存在 err == nil || errors.Is(err, ErrDuplicateUser)
+	// todo 主从延迟 不一定能在数据库中找到数据
+	// 插入的主库，查询的是从库
+	// 强制走主库
+	return svc.repo.FindByPhone(ctx, phone)
 }

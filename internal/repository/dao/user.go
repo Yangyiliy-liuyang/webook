@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrDuplicateEmail = errors.New("邮箱冲突")
+	ErrDuplicateUser  = errors.New("用户冲突")
 	ErrRecordNotFound = gorm.ErrRecordNotFound
 )
 
@@ -32,7 +32,7 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
 		const duplicateErr uint16 = 1062
 		if duplicateErr == me.Number {
 			// todo 用户冲突，邮箱 唯一索引冲突
-			return ErrDuplicateEmail
+			return ErrDuplicateUser
 		}
 	}
 	return err
@@ -69,12 +69,13 @@ type User struct {
 	//不是自增则意味中间插入数据，页分页
 	Id int64 `gorm:"primaryKey,autoIncrement"`
 	// 代表一个可以为空的列
-	Email    sql.NullString `gorm:"unique"`
+	Email sql.NullString `gorm:"unique"`
+	// Email    *string `gorm:"unique"`
 	Phone    sql.NullString `gorm:"unique"`
 	Password string
-	Nickname sql.NullString
-	Birthday sql.NullInt64
-	AboutMe  sql.NullString
+	Nickname string `gorm:"type=varchar(128)"`
+	Birthday int64
+	AboutMe  string `gorm:"type=varchar(4096)"`
 	//TODO 为什么不用time.time : UTC 0 的时区
 	// 整个系统内部都使用UTC 0 的时区，
 	// 在要返回给前端的时候才改成UTF8 或者直接交给前端处理

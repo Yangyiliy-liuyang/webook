@@ -123,7 +123,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 	switch {
 	case err == nil:
 		ctx.String(http.StatusOK, "hello,正在注册...")
-	case errors.Is(err, service.ErrDuplicateEmail):
+	case errors.Is(err, service.ErrDuplicateUser):
 		ctx.String(http.StatusOK, "邮箱冲突,请换一个")
 	default:
 		ctx.String(http.StatusOK, "系统错误")
@@ -272,14 +272,14 @@ func (h *UserHandler) SendSSMLoginCode(ctx *gin.Context) {
 		return
 	}
 	err := h.codeSvc.Send(ctx, bizLogin, req.Phone)
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		ctx.JSON(http.StatusOK, Result{
 			Code: 200,
 			Msg:  "发送成功",
 		})
 		return
-	case service.ErrCodeSendTooMany:
+	case errors.Is(err, service.ErrCodeSendTooMany):
 		ctx.JSON(http.StatusOK, Result{
 			Code: 4,
 			Msg:  "短信发送太频繁",
@@ -302,8 +302,8 @@ func (h *UserHandler) LoginSSM(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
-	if err != nil {
+	//ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
+	/*if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
 			Msg:  "系统错误",
@@ -313,10 +313,10 @@ func (h *UserHandler) LoginSSM(ctx *gin.Context) {
 	if !ok {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 4,
-			Msg:  "验证码错误，请重新输入。",
+			Msg:  "验证码错误，请重新输入",
 		})
 		return
-	}
+	}*/
 	u, err := h.svc.FindOrCreate(ctx, req.Phone)
 	if err != nil {
 		return

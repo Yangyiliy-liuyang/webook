@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"webook/internal/repository"
 	"webook/internal/service/sms"
+	"webook/internal/service/sms/localsms"
 )
 
 var ErrCodeSendTooMany = repository.ErrCodeSendTooMany
@@ -14,6 +15,13 @@ var ErrCodeSendTooMany = repository.ErrCodeSendTooMany
 type CodeService struct {
 	repo *repository.CodeRepository
 	sms  sms.Service
+}
+
+func NewCodeService(repo *repository.CodeRepository, smsSvc *localsms.Service) *CodeService {
+	return &CodeService{
+		repo: repo,
+		sms:  smsSvc,
+	}
 }
 
 // Send 生成一个验证码，发送

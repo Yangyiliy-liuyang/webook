@@ -8,8 +8,8 @@ local cntKey = key..":cnt"
 -- 用户输入的验证码
 local expectedCode = AVGE[1]
 local cnt = tonumber(redis.call("get",cntKey))
-local code =redis.call("get",key)
-if cnt==nil or cnt<=0 then
+local code = redis.call("get",key)
+if cnt == nil or cnt <= 0 then
     -- 验证次数耗尽
     return -1
 end

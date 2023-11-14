@@ -3,21 +3,28 @@ package main
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strings"
 	"time"
 	"webook/internal/repository"
+	"webook/internal/repository/cache"
 	"webook/internal/repository/dao"
 	"webook/internal/service"
+	"webook/internal/service/sms/localsms"
 	"webook/internal/web"
 	"webook/internal/web/middleware"
 )
 
 func main() {
 	db := initDB()
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
 	server := initWebServer()
-	initUserHandler(db, server)
+	codeSvc := initCodeSvc(redisClient)
+	initUserHandler(db, redisClient, codeSvc, server)
 	//server := gin.Default()
 	//server.GET("/hello", func(ctx *gin.Context) {
 	//	ctx.String(http.StatusOK, "hello")
@@ -26,12 +33,24 @@ func main() {
 
 }
 
-func initUserHandler(db *gorm.DB, server *gin.Engine) {
+func initUserHandler(db *gorm.DB, redisClient redis.Cmdable, codeSvc *service.CodeService, server *gin.Engine) {
 	ud := dao.NewUserDAO(db)
-	ur := repository.NewUserRepository(ud)
+	uc := cache.NewUserCache(redisClient)
+	ur := repository.NewUserRepository(ud, uc)
 	us := service.NewUserService(ur)
-	hdl := web.NewUserHandler(us)
+	hdl := web.NewUserHandler(us, codeSvc)
 	hdl.RegisterRouter(server)
+}
+
+func initCodeSvc(redisClient redis.Cmdable) *service.CodeService {
+	cc := cache.NewCodeCache(redisClient)
+	cr := repository.NewCodeRepository(cc)
+	// todo
+	return service.NewCodeService(cr, initMemorySms())
+}
+
+func initMemorySms() *localsms.Service {
+	return localsms.NewService()
 }
 
 func initWebServer() *gin.Engine {
