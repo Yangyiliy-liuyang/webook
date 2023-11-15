@@ -195,17 +195,27 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 
 // Profile 拿到用户基本信息
 func (h *UserHandler) Profile(ctx *gin.Context) {
-	type profile struct {
-		Email    string
-		Nickname string
-		Phone    string
-		Birthday string
-		AboutMe  string
-	}
 	// todo token中取出Id
-	//var user profile
-	//h.svc.GetUserInfo(ctx)
+	u, err := h.svc.GetUserInfo(ctx, id)
+	type User struct {
+		Email           string `json:"email"`
+		Phone           string `json:"phone"`
+		Nickname        string `json:"nickname"`
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirmPassword"`
 
+		Birthday time.Time `json:"birthday"`
+		AboutMe  string    `json:"aboutMe"`
+	}
+	ctx.JSON(http.StatusOK, User{
+		Email:           u.Email,
+		Phone:           u.Phone,
+		Nickname:        u.Nickname,
+		Password:        "",
+		ConfirmPassword: "",
+		Birthday:        time.Time{},
+		AboutMe:         "",
+	})
 }
 
 func (h *UserHandler) LoginJWT(ctx *gin.Context) {

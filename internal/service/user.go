@@ -70,3 +70,7 @@ func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.
 	// 强制走主库
 	return svc.repo.FindByPhone(ctx, phone)
 }
+
+func (svc *UserService) GetUserInfo(ctx context.Context, id int64) (domain.User, error) {
+	return svc.repo.FindById(ctx, id)
+}
