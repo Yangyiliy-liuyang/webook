@@ -18,6 +18,7 @@ var (
 )
 
 type CodeCache struct {
+	//lock sync.RWMutex
 	cmd redis.Cmdable
 }
 

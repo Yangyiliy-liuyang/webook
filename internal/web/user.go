@@ -180,8 +180,9 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 		return
 	}
 	// todo token中取出Id
+	var uid int64 = 1
 	err = h.svc.UpdateUserInfo(ctx, domain.User{
-		Id:       1,
+		Id:       uid,
 		Nickname: req.Nickname,
 		Birthday: birthday,
 		AboutMe:  req.AboutMe,
@@ -196,7 +197,14 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 // Profile 拿到用户基本信息
 func (h *UserHandler) Profile(ctx *gin.Context) {
 	// todo token中取出Id
-	u, err := h.svc.GetUserInfo(ctx, id)
+	uid := 1
+	u, err := h.svc.GetUserInfo(ctx, int64(uid))
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+	}
 	type User struct {
 		Email           string `json:"email"`
 		Phone           string `json:"phone"`
@@ -207,14 +215,17 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 		Birthday time.Time `json:"birthday"`
 		AboutMe  string    `json:"aboutMe"`
 	}
-	ctx.JSON(http.StatusOK, User{
-		Email:           u.Email,
-		Phone:           u.Phone,
-		Nickname:        u.Nickname,
-		Password:        "",
-		ConfirmPassword: "",
-		Birthday:        time.Time{},
-		AboutMe:         "",
+	ctx.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "profile success",
+		Data: User{
+			Email:    u.Email,
+			Phone:    u.Phone,
+			Nickname: u.Nickname,
+			Password: u.Password,
+			Birthday: u.Birthday,
+			AboutMe:  u.AboutMe,
+		},
 	})
 }
 
