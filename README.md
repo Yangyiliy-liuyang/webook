@@ -20,5 +20,6 @@ docker compose up
 检查数据-doingSth 考虑并发安全
 使用分布式锁或者lua脚本
 ### DDD领域理论  REST风格 依赖注入
+### 面向接口编程 超前设计 最小化实现
 
 

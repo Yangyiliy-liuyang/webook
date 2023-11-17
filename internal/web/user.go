@@ -25,11 +25,11 @@ RegisterRouter方法 用来注册路由
 type UserHandler struct {
 	emailRegexExp    *regexp.Regexp
 	passwordRegexExp *regexp.Regexp
-	svc              *service.UserService
-	codeSvc          *service.CodeService
+	svc              service.UserService
+	codeSvc          service.CodeService
 }
 
-func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
 	return &UserHandler{
 		emailRegexExp:    regexp.MustCompile(EmailReGexPattern, regexp.None),
 		passwordRegexExp: regexp.MustCompile(PasswordReGexPattern, regexp.None),
@@ -198,7 +198,7 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 func (h *UserHandler) Profile(ctx *gin.Context) {
 	// todo token中取出Id
 	uid := 1
-	u, err := h.svc.GetUserInfo(ctx, int64(uid))
+	u, err := h.svc.FindById(ctx, int64(uid))
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
