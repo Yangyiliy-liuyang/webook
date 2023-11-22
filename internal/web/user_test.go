@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"net/http"
+	"net/http/httptest"
 	"testing"
+	"webook/internal/domain"
+	svcmocks "webook/internal/service/mocks"
 )
 
 func TestUserEmailPattern(t *testing.T) {
@@ -46,7 +50,19 @@ func TestUserEmailPattern(t *testing.T) {
 	}
 }
 func TestHTTP(t *testing.T) {
+	// todo 构建http请求 获得http响应
 	_, err := http.NewRequest(http.MethodPost, "/users/signup", bytes.NewReader([]byte("xxxx")))
 	assert.NoError(t, err)
-
+	recorder := httptest.NewRecorder()
+	assert.Equal(t, http.StatusOK, recorder.Code)
+}
+func TestMock(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	// mock模拟实现
+	userSvc := svcmocks.NewMockUserService(ctrl)
+	userSvc.EXPECT().SingUp(gomock.Any(), domain.User{
+		Id:    1,
+		Email: "1223@qq.com",
+	}).
 }

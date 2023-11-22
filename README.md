@@ -1,6 +1,6 @@
 # webook
 webook 是一个仿简书的项目
-gin + gorm + cors + regex + bcrypt + sessions + redis + JWT + sms + lua脚本 + wire
+gin + gorm + cors + regex + bcrypt + sessions + redis + JWT + sms + lua脚本 + wire + mock
 ## 目录结构
 
 ## 启动
@@ -21,6 +21,6 @@ docker compose up
 使用分布式锁或者lua脚本
 ### DDD领域理论  REST风格 依赖注入
 ### 面向接口编程 超前设计 最小化实现
-### 单元测试 集成测试
+### 单元测试 集成测试 mock
 
 
