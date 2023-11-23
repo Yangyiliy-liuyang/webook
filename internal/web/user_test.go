@@ -49,13 +49,16 @@ func TestUserEmailPattern(t *testing.T) {
 		})
 	}
 }
+
 func TestHTTP(t *testing.T) {
-	// todo 构建http请求 获得http响应
-	_, err := http.NewRequest(http.MethodPost, "/users/signup", bytes.NewReader([]byte("xxxx")))
-	assert.NoError(t, err)
+	// 构建http请求
+	_, err := http.NewRequest(http.MethodPost, "/users/signup", bytes.NewReader([]byte("我的请求体")))
+	assert.NoError(t, err) // 断言一定有err
+	// 获得http响应
 	recorder := httptest.NewRecorder()
 	assert.Equal(t, http.StatusOK, recorder.Code)
 }
+
 func TestMock(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
