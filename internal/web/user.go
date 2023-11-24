@@ -2,19 +2,18 @@ package web
 
 import (
 	"errors"
+	regexp "github.com/dlclark/regexp2"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"time"
 	"webook/internal/domain"
 	"webook/internal/service"
-
-	regexp "github.com/dlclark/regexp2"
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
-	EmailReGexPattern    = "/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$/"
-	PasswordReGexPattern = "^(?=.*\\d)(?=.*[a-zA-Z])(?=.*[^\\da-zA-Z\\s]).{1,9}$"
+	EmailReGexPattern    = "^[A-Za-z0-9\\u4e00-\\u9fa5]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$"
+	PasswordReGexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
 	bizLogin             = "login"
 )
 
@@ -97,18 +96,16 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 	if isEmail {
-		println(isEmail)
 		ctx.String(http.StatusOK, "邮箱格式错误")
 		return
 	}
-	isPass, err := h.emailRegexExp.MatchString(PasswordReGexPattern)
+	isPass, err := h.passwordRegexExp.MatchString(PasswordReGexPattern)
 	if err != nil {
-		println(err)
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
 	if isPass {
-		ctx.String(http.StatusOK, "密码格式错误，至少包含字母、数字、特殊字符，1-9位")
+		ctx.String(http.StatusOK, "密码格式错误，必须包含字母、数字、特殊字符")
 		return
 	}
 	if req.Password != req.ConfirmPassword {
