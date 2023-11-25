@@ -71,7 +71,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
 				userSvc := svcmocks.NewMockUserService(ctrl)
 				userSvc.EXPECT().SingUp(gomock.Any(), domain.User{
-					Email:    "123@qq.com",
+					Email:    "1234@qq.com",
 					Password: "hello#world123",
 				}).Return(nil)
 				codeSvc := svcmocks.NewMockCodeService(ctrl)
@@ -80,7 +80,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			reqBuilder: func(t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", bytes.NewReader([]byte(`{
-"email": "123@qq.com",
+"email": "1234@qq.com",
 "password": "hello#world123",
 "confirmPassword": "hello#world123"
 }`)))

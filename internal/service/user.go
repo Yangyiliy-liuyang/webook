@@ -48,7 +48,7 @@ func (svc *userService) Login(ctx context.Context, email string, password string
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, ErrInvalidUserOrPassword
 	}
 	return u, nil
 }
