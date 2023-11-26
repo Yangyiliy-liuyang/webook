@@ -35,7 +35,7 @@ func (c *RedisUserCache) Get(ctx context.Context, uid int64) (domain.User, error
 	key := c.Key(uid)
 	data, err := c.cmd.Get(ctx, key).Result()
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, ErrKeyNotExist
 	}
 	var u domain.User
 	err = json.Unmarshal([]byte(data), &u)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"time"
 	"webook/internal/domain"
 	"webook/internal/repository/cache"
 	"webook/internal/repository/dao"
@@ -51,6 +52,11 @@ func (repo *CacheUserRepository) toDomain(du dao.User) domain.User {
 		Id:       du.Id,
 		Email:    du.Email.String,
 		Password: du.Password,
+		Phone:    du.Phone.String,
+		AboutMe:  du.AboutMe,
+		Nickname: du.Nickname,
+		Birthday: time.UnixMilli(du.Birthday),
+		Ctime:    time.UnixMilli(du.Ctime),
 	}
 }
 
