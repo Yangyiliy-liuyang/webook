@@ -27,6 +27,7 @@ func (o *OAuth2WechatHandler) OAuth2URL(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{
+		Msg:  "成功",
 		Data: url,
 	})
 }
