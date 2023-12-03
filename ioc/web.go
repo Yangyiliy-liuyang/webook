@@ -9,10 +9,11 @@ import (
 	"webook/internal/web/middleware"
 )
 
-func InitWebService(funcs []gin.HandlerFunc, userHdl *web.UserHandler) *gin.Engine {
+func InitWebService(funcs []gin.HandlerFunc, userHdl *web.UserHandler, wechatHdl *web.OAuth2WechatHandler) *gin.Engine {
 	server := gin.Default()
 	server.Use(funcs...)
 	userHdl.RegisterRouter(server)
+	wechatHdl.RegisterRouters(server)
 	return server
 }
 func InitGinMiddleware() []gin.HandlerFunc {
