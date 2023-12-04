@@ -35,13 +35,14 @@ func (s *service) VerifyCode(ctx context.Context, code string) (domain.WechatInf
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
-	httpResp, err := s.client.Do(Req)
+	_, err = s.client.Do(Req)
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
 
 	panic("implement me")
 }
+
 func (s *service) AuthURL(ctx context.Context) (string, error) {
 	//https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html
 	const authURLPattern = "https://open.weixin.qq.com/connect/qrconnect?appid=%s&redirect_uri=%s&response_type=code&scope=snsapi_login&state=%s#wechat_redirect"
