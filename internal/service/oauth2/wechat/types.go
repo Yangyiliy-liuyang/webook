@@ -22,10 +22,10 @@ type service struct {
 	client    *http.Client
 }
 
-func NewService(appId string, appSecret string) Service {
-	return &service{appId: appId,
-		appSecret: appSecret,
-		client:    http.DefaultClient}
+func NewService(appId string) Service {
+	return &service{appId: appId} //appSecret: appSecret,
+	//client:    http.DefaultClient,
+
 }
 
 // 通过code发起调用获取accessToken

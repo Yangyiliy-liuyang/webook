@@ -14,7 +14,6 @@ func main() {
 	//codeSvc := initCodeSvc(redisClient)
 	//initUserHandler(db, redisClient, codeSvc, server)
 	//server := gin.Default()
-
 	server := InitWebServer()
 	server.GET("/hello", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "hello")
