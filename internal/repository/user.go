@@ -63,6 +63,7 @@ func (repo *CacheUserRepository) toDomain(du dao.User) domain.User {
 func (repo *CacheUserRepository) UpdateUserInfo(ctx context.Context, u domain.User) error {
 	return repo.dao.InsertInfo(ctx, repo.domainToEntity(u))
 }
+
 func (repo *CacheUserRepository) domainToEntity(u domain.User) dao.User {
 	return dao.User{
 		Id: u.Id,
@@ -81,6 +82,7 @@ func (repo *CacheUserRepository) domainToEntity(u domain.User) dao.User {
 		Password: u.Password,
 	}
 }
+
 func (repo *CacheUserRepository) FindById(ctx context.Context, uid int64) (domain.User, error) {
 	du, err := repo.cache.Get(ctx, uid)
 	//只要err为nil就返回
