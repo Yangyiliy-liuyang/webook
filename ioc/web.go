@@ -16,6 +16,7 @@ func InitWebService(funcs []gin.HandlerFunc, userHdl *web.UserHandler, wechatHdl
 	wechatHdl.RegisterRouters(server)
 	return server
 }
+
 func InitGinMiddleware() []gin.HandlerFunc {
 	return []gin.HandlerFunc{cors.New(cors.Config{
 		//AllowOrigins: []string{"http://localhost:3030"},
