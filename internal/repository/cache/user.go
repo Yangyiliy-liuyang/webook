@@ -31,6 +31,7 @@ func NewRedisUserCache(cmd redis.Cmdable) UserCache {
 		expiration: time.Minute * 15,
 	}
 }
+
 func (c *RedisUserCache) Get(ctx context.Context, uid int64) (domain.User, error) {
 	key := c.Key(uid)
 	data, err := c.cmd.Get(ctx, key).Result()
@@ -41,6 +42,7 @@ func (c *RedisUserCache) Get(ctx context.Context, uid int64) (domain.User, error
 	err = json.Unmarshal([]byte(data), &u)
 	return u, err
 }
+
 func (c *RedisUserCache) Key(uid int64) string {
 	return fmt.Sprintf("user:info:%d", uid)
 }
