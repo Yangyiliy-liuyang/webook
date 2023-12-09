@@ -23,6 +23,7 @@ type UserRepository interface {
 	FindById(ctx context.Context, uid int64) (domain.User, error)
 	FindByPhone(ctx context.Context, phone string) (domain.User, error)
 }
+
 type CacheUserRepository struct {
 	dao   dao.UserDAO
 	cache cache.UserCache
@@ -34,6 +35,7 @@ func NewCacheUserRepository(dao dao.UserDAO, cache cache.UserCache) UserReposito
 		cache: cache,
 	}
 }
+
 func (repo *CacheUserRepository) Create(ctx context.Context, u domain.User) error {
 	return repo.dao.Insert(ctx, repo.domainToEntity(u))
 }
