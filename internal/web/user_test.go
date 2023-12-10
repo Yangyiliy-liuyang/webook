@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -27,12 +28,12 @@ func TestUserEmailPattern(t *testing.T) {
 		//after 数据清洗
 	}{
 		{
-			name:  "1",
+			name:  "用例1",
 			email: "123@",
 			match: false,
 		},
 		{
-			name:  "2",
+			name:  "用例2",
 			email: "123@qq",
 			match: false,
 		},
@@ -52,16 +53,14 @@ func TestUserEmailPattern(t *testing.T) {
 		})
 	}
 }
+
 func TestUserHandler_SignUp(t *testing.T) {
 	testCases := []struct {
 		name string
-
 		// mock
 		mock func(ctrl *gomock.Controller) (service.UserService, service.CodeService)
-
 		// 构造请求，预期中输入
 		reqBuilder func(t *testing.T) *http.Request
-
 		// 预期中的输出
 		wantCode int
 		wantBody string
@@ -80,15 +79,14 @@ func TestUserHandler_SignUp(t *testing.T) {
 			reqBuilder: func(t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", bytes.NewReader([]byte(`{
-"email": "1234@qq.com",
-"password": "hello#world123",
-"confirmPassword": "hello#world123"
-}`)))
+							"email": "1234@qq.com",
+							"password": "hello#world123",
+							"confirmPassword": "hello#world123"
+							}`)))
 				req.Header.Set("Content-Type", "application/json")
 				assert.NoError(t, err)
 				return req
 			},
-
 			wantCode: http.StatusOK,
 			wantBody: "hello,正在注册...",
 		},
@@ -102,9 +100,9 @@ func TestUserHandler_SignUp(t *testing.T) {
 			reqBuilder: func(t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", bytes.NewReader([]byte(`{
-"email": "123@qq.com",
-"password": "hello#world
-}`)))
+							"email": "123@qq.com",
+							"password": "hello#world
+							}`)))
 				req.Header.Set("Content-Type", "application/json")
 				assert.NoError(t, err)
 				return req
@@ -123,10 +121,10 @@ func TestUserHandler_SignUp(t *testing.T) {
 			reqBuilder: func(t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", bytes.NewReader([]byte(`{
-"email": "123@",
-"password": "hello#world123",
-"confirmPassword": "hello#world123"
-}`)))
+							"email": "123@",
+							"password": "hello#world123",
+							"confirmPassword": "hello#world123"
+							}`)))
 				req.Header.Set("Content-Type", "application/json")
 				assert.NoError(t, err)
 				return req
@@ -145,10 +143,10 @@ func TestUserHandler_SignUp(t *testing.T) {
 			reqBuilder: func(t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", bytes.NewReader([]byte(`{
-"email": "123@qq.com",
-"password": "hello#world123455",
-"confirmPassword": "hello#world123"
-}`)))
+						"email": "123@qq.com",
+						"password": "hello#world123455",
+						"confirmPassword": "hello#world123"
+						}`)))
 				req.Header.Set("Content-Type", "application/json")
 				assert.NoError(t, err)
 				return req
@@ -168,10 +166,10 @@ func TestUserHandler_SignUp(t *testing.T) {
 			reqBuilder: func(t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", bytes.NewReader([]byte(`{
-"email": "123@qq.com",
-"password": "hello",
-"confirmPassword": "hello"
-}`)))
+							"email": "123@qq.com",
+							"password": "hello",
+							"confirmPassword": "hello"
+							}`)))
 				req.Header.Set("Content-Type", "application/json")
 				assert.NoError(t, err)
 				return req
@@ -195,10 +193,10 @@ func TestUserHandler_SignUp(t *testing.T) {
 			reqBuilder: func(t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", bytes.NewReader([]byte(`{
-"email": "123@qq.com",
-"password": "hello#world123",
-"confirmPassword": "hello#world123"
-}`)))
+							"email": "123@qq.com",
+							"password": "hello#world123",
+							"confirmPassword": "hello#world123"
+							}`)))
 				req.Header.Set("Content-Type", "application/json")
 				assert.NoError(t, err)
 				return req
@@ -222,10 +220,10 @@ func TestUserHandler_SignUp(t *testing.T) {
 			reqBuilder: func(t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", bytes.NewReader([]byte(`{
-"email": "123@qq.com",
-"password": "hello#world123",
-"confirmPassword": "hello#world123"
-}`)))
+						"email": "123@qq.com",
+						"password": "hello#world123",
+						"confirmPassword": "hello#world123"
+						}`)))
 				req.Header.Set("Content-Type", "application/json")
 				assert.NoError(t, err)
 				return req
@@ -240,22 +238,17 @@ func TestUserHandler_SignUp(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-
 			// 构造 handler
 			userSvc, codeSvc := tc.mock(ctrl)
 			hdl := NewUserHandler(userSvc, codeSvc)
-
 			// 准备服务器，注册路由
 			server := gin.Default()
 			hdl.RegisterRouter(server)
-
 			// 准备Req和记录的 recorder
 			req := tc.reqBuilder(t)
 			recorder := httptest.NewRecorder()
-
-			// 执行
+			// 执行 本地假装收到了http请求
 			server.ServeHTTP(recorder, req)
-
 			// 断言结果
 			assert.Equal(t, tc.wantCode, recorder.Code)
 			assert.Equal(t, tc.wantBody, recorder.Body.String())
@@ -263,28 +256,29 @@ func TestUserHandler_SignUp(t *testing.T) {
 	}
 }
 
-//func TestHTTP(t *testing.T) {
-//	// 构建http请求
-//	_, err := http.NewRequest(http.MethodPost, "/users/signup", bytes.NewReader([]byte("我的请求体")))
-//	assert.NoError(t, err) // 断言一定有err
-//	// 获得http响应
-//	recorder := httptest.NewRecorder()
-//	assert.Equal(t, http.StatusOK, recorder.Code)
-//}
-//
-//func TestMock(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//	defer ctrl.Finish()
-//	// mock模拟实现
-//	userSvc := svcmocks.NewMockUserService(ctrl)
-//	// 设置了模拟场景，预期第一个参数是任意，第二个一定是
-//	userSvc.EXPECT().SingUp(gomock.Any(), domain.User{
-//		Id:    1,
-//		Email: "1223@qq.com",
-//	}).Return(errors.New("db 出错"))
-//
-//	err := userSvc.SingUp(context.Background(), domain.User{})
-//	//err := userSvc.SingUp(context.Background(), domain.User{Id: 1,
-//	//	Email: "1223@qq.com"})
-//	t.Log(err)
-//}
+func TestHTTP(t *testing.T) {
+	// 构建http请求
+	_, err := http.NewRequest(http.MethodPost, "/users/signup", bytes.NewReader([]byte("我的请求体")))
+	assert.NoError(t, err) // 断言一定有err
+	// 获得http响应
+	recorder := httptest.NewRecorder()
+	assert.Equal(t, http.StatusOK, recorder.Code)
+}
+
+func TestMock(t *testing.T) {
+	// 初始化控制器
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	// 创建mock模拟实现
+	userSvc := svcmocks.NewMockUserService(ctrl)
+	// 设置了模拟场景，预期第一个参数是任意，第二个一定是
+	userSvc.EXPECT().SingUp(gomock.Any(), domain.User{
+		Id:    1,
+		Email: "1223@qq.com",
+	}).Return(errors.New("db 出错"))
+	//err := userSvc.SingUp(context.Background(), domain.User{})
+	err := userSvc.SingUp(context.Background(), domain.User{
+		Id:    1,
+		Email: "1223@qq.com"})
+	t.Log(err)
+}

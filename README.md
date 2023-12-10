@@ -1,6 +1,6 @@
 # webook
 webook 是一个仿简书的项目
-gin + gorm + cors + regex + bcrypt + sessions + redis + JWT + sms + lua脚本 + wire + mock
+gin + gorm + cors + regex + bcrypt + sessions + redis + JWT + sms + lua脚本 + wire + mock + 
 ## 目录结构
 
 ## 启动
