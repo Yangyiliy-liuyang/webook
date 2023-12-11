@@ -35,7 +35,6 @@ func Test_userService_Login(t *testing.T) {
 		ctx      context.Context
 		email    string
 		password string
-
 		wantUser domain.User
 		wantErr  error
 	}{

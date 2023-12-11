@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 	"webook/internal/domain"
 	"webook/internal/repository/cache"
@@ -41,12 +40,12 @@ func (repo *CacheUserRepository) Create(ctx context.Context, u domain.User) erro
 }
 
 func (repo *CacheUserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
-	u, err := repo.dao.FindByEmail(ctx, email)
+	du, err := repo.dao.FindByEmail(ctx, email)
 	if err != nil {
 		return domain.User{}, err
 	}
-	du := repo.toDomain(u)
-	return du, nil
+	u := repo.toDomain(du)
+	return u, nil
 }
 
 func (repo *CacheUserRepository) toDomain(du dao.User) domain.User {
@@ -86,53 +85,19 @@ func (repo *CacheUserRepository) domainToEntity(u domain.User) dao.User {
 }
 
 func (repo *CacheUserRepository) FindById(ctx context.Context, uid int64) (domain.User, error) {
-	du, err := repo.cache.Get(ctx, uid)
-	//只要err为nil就返回
-	//if err == nil {
-	//	// 拿到了数据
-	//	return du, nil
-	//}
-	/*switch err {
-	case nil:
-		return du, nil
-	case cache.ErrKeyNotExist:
-		u, err := repo.dao.FindById(ctx, uid)
-		if err != nil {
-			return domain.User{}, err
-		}
-		du = repo.toDomain(u)
-		//同步写
-		//err = repo.cache.Set(ctx, du)
-		//异步写 进一步提高性能
-		go func() {
-			err := repo.cache.Set(ctx, du)
-			if err != nil {
-				log.Println(err)
-			}
-		}()
-	default:
-		//redis有问题 缓存穿透击穿，保住数据库
-		return domain.User{}, err
-	}*/
-	//不为nil，查询数据库
-	//err存在情况
-	//1、key不存在，redis正常
-	//2.访问redis有问题，网络 、 redis本身有问题
-	u, err := repo.dao.FindById(ctx, uid)
+	u, err := repo.cache.Get(ctx, uid)
+	// 注意这里的处理方式
+	if err == nil {
+		return u, err
+	}
+	du, err := repo.dao.FindById(ctx, uid)
 	if err != nil {
 		return domain.User{}, err
 	}
-	du = repo.toDomain(u)
-	//同步写
-	//err = repo.cache.Set(ctx, du)
-	//异步写 进一步提高性能
-	go func() {
-		err := repo.cache.Set(ctx, du)
-		if err != nil {
-			log.Println(err)
-		}
-	}()
-	return du, nil
+	u = repo.toDomain(du)
+	// 忽略掉这里的错误
+	_ = repo.cache.Set(ctx, u)
+	return u, nil
 
 }
 

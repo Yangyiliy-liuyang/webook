@@ -12,9 +12,12 @@ import (
 )
 
 const (
-	EmailReGexPattern    = "^[A-Za-z0-9\\u4e00-\\u9fa5]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$"
-	PasswordReGexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
-	bizLogin             = "login"
+	emailRegexPattern = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
+	// 和上面比起来，用 ` 看起来就比较清爽
+	passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
+
+	userIdKey = "userId"
+	bizLogin  = "login"
 )
 
 /*
@@ -30,8 +33,8 @@ type UserHandler struct {
 
 func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
 	return &UserHandler{
-		emailRegexExp:    regexp.MustCompile(EmailReGexPattern, regexp.None),
-		passwordRegexExp: regexp.MustCompile(PasswordReGexPattern, regexp.None),
+		emailRegexExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
+		passwordRegexExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:              svc,
 		codeSvc:          codeSvc,
 	}
@@ -90,21 +93,21 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 			return
 		}*/
 
-	isEmail, err := h.emailRegexExp.MatchString(EmailReGexPattern)
+	isEmail, err := h.emailRegexExp.MatchString(req.Email)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	if isEmail {
+	if !isEmail {
 		ctx.String(http.StatusOK, "邮箱格式错误")
 		return
 	}
-	isPass, err := h.passwordRegexExp.MatchString(PasswordReGexPattern)
+	isPassword, err := h.passwordRegexExp.MatchString(req.Password)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	if isPass {
+	if !isPassword {
 		ctx.String(http.StatusOK, "密码格式错误，必须包含字母、数字、特殊字符")
 		return
 	}

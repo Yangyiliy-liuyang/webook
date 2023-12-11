@@ -15,10 +15,7 @@ import (
 	daomocks "webook/internal/repository/dao/mocks"
 )
 
-// todo error ActualNotAsExpected
 func TestCacheUserRepository_FindById(t *testing.T) {
-	nowMs := time.Now().UnixMilli()
-	now := time.UnixMilli(nowMs)
 	testCases := []struct {
 		name     string
 		mock     func(ctrl *gomock.Controller) (cache.UserCache, dao.UserDAO)
@@ -70,7 +67,7 @@ func TestCacheUserRepository_FindById(t *testing.T) {
 				Birthday: time.UnixMilli(100),
 				AboutMe:  "自我介绍",
 				Phone:    "15212345678",
-				Ctime:    now,
+				Ctime:    time.UnixMilli(101),
 			},
 			wantErr: nil,
 		},
@@ -81,16 +78,15 @@ func TestCacheUserRepository_FindById(t *testing.T) {
 				uid := int64(123)
 				d := daomocks.NewMockUserDAO(ctrl)
 				c := cachemocks.NewMockUserCache(ctrl)
-				c.EXPECT().Get(gomock.Any(), uid).
-					Return(domain.User{
-						Id:       123,
-						Email:    "123@qq.com",
-						Password: "123456",
-						Birthday: time.UnixMilli(100),
-						AboutMe:  "自我介绍",
-						Phone:    "15212345678",
-						Ctime:    time.UnixMilli(101),
-					}, nil)
+				c.EXPECT().Get(gomock.Any(), uid).Return(domain.User{
+					Id:       123,
+					Email:    "123@qq.com",
+					Password: "123456",
+					Birthday: time.UnixMilli(100),
+					AboutMe:  "自我介绍",
+					Phone:    "15212345678",
+					Ctime:    time.UnixMilli(101),
+				}, nil)
 				return c, d
 			},
 			uid: 123,
@@ -113,10 +109,8 @@ func TestCacheUserRepository_FindById(t *testing.T) {
 				uid := int64(123)
 				d := daomocks.NewMockUserDAO(ctrl)
 				c := cachemocks.NewMockUserCache(ctrl)
-				c.EXPECT().Get(gomock.Any(), uid).
-					Return(domain.User{}, cache.ErrKeyNotExist)
-				d.EXPECT().FindById(gomock.Any(), uid).
-					Return(dao.User{}, dao.ErrRecordNotFound)
+				c.EXPECT().Get(gomock.Any(), uid).Return(domain.User{}, cache.ErrKeyNotExist)
+				d.EXPECT().FindById(gomock.Any(), uid).Return(dao.User{}, dao.ErrRecordNotFound)
 				return c, d
 			},
 			uid:      123,
