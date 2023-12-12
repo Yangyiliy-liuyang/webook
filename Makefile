@@ -20,5 +20,6 @@ mock:
 
     @mockgen `-source=./internal/repository/cache/user.go `-package=cachemocks `-destination=./internal/repository/cache/mocks/user.mock.go
 	@mockgen `-source=./internal/repository/cache/code.go `-package=cachemocks `-destination=./internal/repository/cache/mocks/code.mock.go
+	@mockgen `-package=redismocks `-destination=./internal/repository/cache/rediscache/cmd.mock.go github.com/go-redis/redis/v8 Cmdable
 
 	@go mod tidy
