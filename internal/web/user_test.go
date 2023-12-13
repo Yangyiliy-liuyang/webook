@@ -16,6 +16,9 @@ import (
 	svcmocks "webook/internal/service/mocks"
 )
 
+func init() {
+	gin.SetMode(gin.ReleaseMode)
+}
 func TestUserEmailPattern(t *testing.T) {
 	// 组织测试的策略 Table Driven（表格驱动）
 	testCases := []struct {
@@ -162,7 +165,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 				return nil, nil
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
-				body := bytes.NewBuffer([]byte(`{"email":"yangyiliy@qq.com","password":"hello","confirmPassword":"hello@world123"}`))
+				body := bytes.NewBuffer([]byte(`{"email":"yangyiliy@qq.com","password":"hello@world1","confirmPassword":"hello@world123"}`))
 				req, err := http.NewRequest(http.MethodPost,
 					"/users/signup", body)
 				req.Header.Set("Content-Type", "application/json")
