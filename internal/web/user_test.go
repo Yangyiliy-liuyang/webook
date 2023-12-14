@@ -158,7 +158,6 @@ func TestUserHandler_SignUp(t *testing.T) {
 			wantBody: "密码格式错误，必须包含字母、数字、特殊字符",
 		},
 		{
-			// todo err
 			name: "两次密码输入不同",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
 				// 因为根本没有跑到 signup 那里，所以直接返回 nil 都可以

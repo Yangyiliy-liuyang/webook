@@ -57,7 +57,6 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 				assert.NoError(t, err)
 				// 过期时间是十分钟，所以这里肯定会大于 9 分钟
 				assert.True(t, ttl > time.Minute*9)
-
 				// 删除数据
 				err = rdb.Del(ctx, key).Err()
 				assert.NoError(t, err)
