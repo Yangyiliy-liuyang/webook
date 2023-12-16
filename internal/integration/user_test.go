@@ -150,16 +150,13 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
-
 			body := fmt.Sprintf(`{"phone": "%s"}`, tc.phone)
 			req, err := http.NewRequest(http.MethodPost, sendSMSCodeUrl,
 				bytes.NewBuffer([]byte(body)))
 			req.Header.Set("Content-Type", "application/json")
 			assert.NoError(t, err)
-
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
-
 			code := recorder.Code
 			// 反序列化为结果
 			var result web.Result
