@@ -34,7 +34,6 @@ func (s *service) VerifyCode(ctx context.Context, code string) (domain.WechatInf
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
-
 	panic("implement me")
 }
 
