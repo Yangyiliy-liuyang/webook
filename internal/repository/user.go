@@ -98,7 +98,6 @@ func (repo *CacheUserRepository) FindById(ctx context.Context, uid int64) (domai
 	// 忽略掉这里的错误
 	_ = repo.cache.Set(ctx, u)
 	return u, nil
-
 }
 
 func (repo *CacheUserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
