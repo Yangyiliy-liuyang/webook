@@ -71,7 +71,6 @@ func TestCacheUserRepository_FindById(t *testing.T) {
 			},
 			wantErr: nil,
 		},
-
 		{
 			name: "缓存命中",
 			mock: func(ctrl *gomock.Controller) (cache.UserCache, dao.UserDAO) {
