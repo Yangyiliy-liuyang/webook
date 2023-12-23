@@ -101,7 +101,6 @@ func TestCacheUserRepository_FindById(t *testing.T) {
 			},
 			wantErr: nil,
 		},
-
 		{
 			name: "未找到用户",
 			mock: func(ctrl *gomock.Controller) (cache.UserCache, dao.UserDAO) {
