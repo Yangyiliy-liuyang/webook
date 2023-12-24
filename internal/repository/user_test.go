@@ -116,7 +116,6 @@ func TestCacheUserRepository_FindById(t *testing.T) {
 			wantUser: domain.User{},
 			wantErr:  dao.ErrRecordNotFound,
 		},
-
 		{
 			name: "回写缓存失败",
 			mock: func(ctrl *gomock.Controller) (cache.UserCache, dao.UserDAO) {
