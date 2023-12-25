@@ -202,7 +202,6 @@ func TestUserHandler_SignUp(t *testing.T) {
 			wantCode: http.StatusOK,
 			wantBody: "系统错误",
 		},
-
 		{
 			name: "邮箱冲突",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
