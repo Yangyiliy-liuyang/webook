@@ -229,7 +229,6 @@ func TestUserHandler_SignUp(t *testing.T) {
 			wantBody: "邮箱冲突,请换一个",
 		},
 	}
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
