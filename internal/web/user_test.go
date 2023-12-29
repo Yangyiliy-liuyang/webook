@@ -152,7 +152,6 @@ func TestUserHandler_SignUp(t *testing.T) {
 				assert.NoError(t, err)
 				return req
 			},
-
 			wantCode: http.StatusOK,
 			wantBody: "密码格式错误，必须包含字母、数字、特殊字符",
 		},
