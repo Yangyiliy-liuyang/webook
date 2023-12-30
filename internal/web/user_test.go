@@ -196,7 +196,6 @@ func TestUserHandler_SignUp(t *testing.T) {
 				assert.NoError(t, err)
 				return req
 			},
-
 			wantCode: http.StatusOK,
 			wantBody: "系统错误",
 		},
