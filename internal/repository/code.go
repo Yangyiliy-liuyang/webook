@@ -24,6 +24,7 @@ func NewCodeRepository(codeCache cache.CodeCache) CodeRepository {
 		cache: codeCache,
 	}
 }
+
 func (repo *CacheCodeRepository) Set(ctx context.Context, biz, phone, code string) error {
 	return repo.cache.Set(ctx, biz, phone, code)
 }
