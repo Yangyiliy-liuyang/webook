@@ -49,7 +49,6 @@ func (h *UserHandler) RegisterRouter(server *gin.Engine) {
 						 /:username
 
 	*/
-
 	/*	//POST方法 把前端数据推给后端
 		service.POST("/users/signup", h.SignUp)
 		service.POST("/users/login", h.Login)
