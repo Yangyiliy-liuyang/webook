@@ -8,6 +8,11 @@ gin + gorm + cors + regex + bcrypt + sessions + redis + JWT + sms + lua脚本 + 
 docker compose up
 
 ### 登录注册 JWT会话管理 限流 使用UserAgent增强JWT安全性
+领域对象domain.User·业务概念  数据库对象dao.User·直接映射到表结构
+- 时区问题int64，统一使用UTC0的时区，返回数据才处理 服务器 go应用 数据库
+- 唯一索引冲突unique
+- Region 使用含糊地区代表
+- 联表 使用json代表Addr string或者反向持有uid
 ### docker kubernetes部署
 ### 对Profile redis缓存 异步
 ### 短信登录 验证码发送 校验 使用Redis缓存 lua脚本
