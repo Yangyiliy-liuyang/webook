@@ -13,6 +13,11 @@ docker compose up
 - 唯一索引冲突unique
 - Region 使用含糊地区代表
 - 联表 使用json代表Addr string或者反向持有uid
+
+为什么使用自增主键？
+- 数据库中的数据存储是一个树型结构，自增意味着树朝一个方向增长，id相邻的大概率在磁盘上也是相邻的
+，充分利用操作系统预读机制。
+不是自增则意味中间插入数据，页分页
 ### docker kubernetes部署
 ### 对Profile redis缓存 异步
 ### 短信登录 验证码发送 校验 使用Redis缓存 lua脚本
