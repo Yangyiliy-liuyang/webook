@@ -26,7 +26,7 @@ func InitGinMiddleware() []gin.HandlerFunc {
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
 			//if strings.HasPrefix(origin,"http://localhost") {
-			if strings.Contains(origin, "http://localhost") {
+			if strings.HasPrefix(origin, "http://localhost") {
 				return true
 			}
 			return strings.Contains(origin, "公司域名.com")

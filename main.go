@@ -19,7 +19,6 @@ func main() {
 		ctx.String(http.StatusOK, "hello")
 	})
 	server.Run(":8080")
-
 }
 
 //func initUserHandler(db *gorm.DB, redisClient redis.Cmdable, codeSvc *service.CodeService, server *gin.Engine) {
