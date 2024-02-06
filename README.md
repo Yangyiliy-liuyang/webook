@@ -28,7 +28,6 @@ docker compose up
 业务层上、分布式环境下并发，不是语言层面上的并发,不可以通过channel 或者 sync.lock 
 检查数据-doingSth 考虑并发安全
 使用分布式锁或者lua脚本
-
 ### DDD领域理论  REST风格 依赖注入
 ### 面向接口编程 超前设计 最小化实现
 ### 单元测试 集成测试 mock sqlmock
