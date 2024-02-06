@@ -3,10 +3,8 @@ webook 是一个仿简书的项目
 gin + gorm + cors + regex + bcrypt + sessions + redis + JWT + sms + lua脚本 + wire + mock + sqlmock 
 + 
 ## 目录结构
-
 ## 启动
 docker compose up
-
 ### 登录注册 JWT会话管理 限流 使用UserAgent增强JWT安全性
 领域对象domain.User·业务概念  数据库对象dao.User·直接映射到表结构
 - 时区问题int64，统一使用UTC0的时区，返回数据才处理 服务器 go应用 数据库
