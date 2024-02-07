@@ -102,7 +102,7 @@ func main() {
 //	//}
 //	//server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
 //}
-//
+
 //func initDB() *gorm.DB {
 //	dsn := "root:root@tcp(localhost:13316)/webook"
 //	db, err := gorm.Open(mysql.Open(dsn))
