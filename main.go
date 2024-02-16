@@ -84,7 +84,7 @@ func main() {
 //		//使用router.Use方法将登录中间件添加到路由器中，以在每个请求处理之前进行用户登录验证。
 //		server.Use(login.CheckLogin())*/
 //	//两个中间件：第一个是用来提取session的，第二个是用来登陆校验的
-//
+
 //	//  单机单实例部署 考虑基于内存的memstore实现，多实例部署，redis
 //	//memstore 是基于内存实现的
 //	//参数一是authentication key 身份验证
