@@ -72,7 +72,7 @@ func main() {
 //	login := &middleware.LoginJWTMilddlewareBuilder{}
 //	server.Use(login.CheckLoginJWT())
 //}
-//
+
 //func useSession(server *gin.Engine) {
 //	//login := &middleware.LoginMiddlewareBuilder{}
 //	/*	//通过cookie.NewStore方法创建了一个存储用户会话数据的cookie存储实例，
