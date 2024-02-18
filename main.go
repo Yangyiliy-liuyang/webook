@@ -67,7 +67,7 @@ func main() {
 //	useJWT(server)
 //	return server
 //}
-//
+
 //func useJWT(server *gin.Engine) {
 //	login := &middleware.LoginJWTMilddlewareBuilder{}
 //	server.Use(login.CheckLoginJWT())
