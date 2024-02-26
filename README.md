@@ -6,7 +6,8 @@ gin
 + regex 
 + bcrypt 
 + sessions 
-+ redis + JWT 
++ redis 
++ + JWT 
 + sms + lua脚本 + wire + mock + sqlmock 
 + 
 ## 目录结构
