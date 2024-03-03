@@ -10,7 +10,8 @@ gin
 + JWT 
 + sms 
 + lua脚本 
-+ wire + mock + sqlmock 
++ wire 
++ + mock + sqlmock 
 + 
 ## 目录结构
 ## 启动
