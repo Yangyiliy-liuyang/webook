@@ -2,6 +2,7 @@ package wechat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"net/http"
@@ -18,9 +19,27 @@ type service struct {
 }
 
 func NewService(appId string) Service {
-	return &service{appId: appId} //appSecret: appSecret,
-	//client:    http.DefaultClient,
+	return &service{
+		appId:  appId,
+		client: http.DefaultClient,
+		//appSecret: appSecret,
+	}
+}
 
+type Service interface {
+	AuthURL(ctx context.Context) (string, error)
+	VerifyCode(ctx context.Context, code string) (domain.WechatInfo, error)
+}
+
+type Result struct {
+	Scope        string `json:"scope"`
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+	OpenId       string `json:"openid"`
+	UnionId      string `json:"unianid"`
+	ErrCode      int    `json:"errcode"`
+	ErrMsg       string `json:"errmsg"`
 }
 
 // 通过code发起调用获取accessToken
@@ -30,11 +49,21 @@ func (s *service) VerifyCode(ctx context.Context, code string) (domain.WechatInf
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
-	_, err = s.client.Do(Req)
+	httpResp, err := s.client.Do(Req)
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
-	panic("implement me")
+
+	var req Result
+	err = json.NewDecoder(httpResp.Body).Decode(req)
+	if err != nil {
+		//json 失败
+		return domain.WechatInfo{}, err
+	}
+	if req.ErrCode != 0 {
+		return domain.WechatInfo{}, fmt.Errorf("调用微信接口失败 %s", err)
+	}
+	return domain.WechatInfo{}, err
 }
 
 func (s *service) AuthURL(ctx context.Context) (string, error) {

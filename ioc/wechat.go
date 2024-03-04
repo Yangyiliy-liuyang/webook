@@ -7,7 +7,10 @@ import (
 )
 
 func InitWechatService() wechat.Service {
-	appID, ok := os.LookupEnv("wxa62d4ace23402481")
+	appID, ok := os.LookupEnv("WECHAT_APP_ID")
 	log.Println(appID, ok)
+	if !ok {
+		panic("[WECHAT_APP_ID] err ")
+	}
 	return wechat.NewService(appID)
 }
