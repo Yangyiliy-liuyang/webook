@@ -53,7 +53,6 @@ func (s *service) VerifyCode(ctx context.Context, code string) (domain.WechatInf
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
-
 	var req Result
 	err = json.NewDecoder(httpResp.Body).Decode(req)
 	if err != nil {
