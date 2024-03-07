@@ -21,6 +21,7 @@ type UserRepository interface {
 	UpdateUserInfo(ctx context.Context, u domain.User) error
 	FindById(ctx context.Context, uid int64) (domain.User, error)
 	FindByPhone(ctx context.Context, phone string) (domain.User, error)
+	FindByWechat(ctx context.Context, OpenId string) (domain.User, error)
 }
 
 type CacheUserRepository struct {
@@ -35,8 +36,17 @@ func NewCacheUserRepository(dao dao.UserDAO, cache cache.UserCache) UserReposito
 	}
 }
 
+func (repo *CacheUserRepository) FindByWechat(ctx context.Context, openId string) (domain.User, error) {
+	du, err := repo.dao.FindByWechat(ctx, openId)
+	if err != nil {
+		return domain.User{}, err
+	}
+	u := repo.toDomain(du)
+	return u, nil
+}
+
 func (repo *CacheUserRepository) Create(ctx context.Context, u domain.User) error {
-	return repo.dao.Insert(ctx, repo.domainToEntity(u))
+	return repo.dao.Insert(ctx, repo.toEntity(u))
 }
 
 func (repo *CacheUserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
@@ -58,14 +68,18 @@ func (repo *CacheUserRepository) toDomain(du dao.User) domain.User {
 		Nickname: du.Nickname,
 		Birthday: time.UnixMilli(du.Birthday),
 		Ctime:    time.UnixMilli(du.Ctime),
+		WechatInfo: domain.WechatInfo{
+			OpenId:  du.WetchatOpenId.String,
+			UnionId: du.WetchatUnionId.String,
+		},
 	}
 }
 
 func (repo *CacheUserRepository) UpdateUserInfo(ctx context.Context, u domain.User) error {
-	return repo.dao.InsertInfo(ctx, repo.domainToEntity(u))
+	return repo.dao.InsertInfo(ctx, repo.toEntity(u))
 }
 
-func (repo *CacheUserRepository) domainToEntity(u domain.User) dao.User {
+func (repo *CacheUserRepository) toEntity(u domain.User) dao.User {
 	return dao.User{
 		Id: u.Id,
 		Email: sql.NullString{
@@ -77,10 +91,12 @@ func (repo *CacheUserRepository) domainToEntity(u domain.User) dao.User {
 			// false 为空 true 为 不为空0
 			Valid: u.Phone != "",
 		},
-		Birthday: u.Birthday.UnixMilli(),
-		Nickname: u.Nickname,
-		AboutMe:  u.AboutMe,
-		Password: u.Password,
+		Birthday:       u.Birthday.UnixMilli(),
+		Nickname:       u.Nickname,
+		AboutMe:        u.AboutMe,
+		Password:       u.Password,
+		WetchatOpenId:  sql.NullString{String: u.WechatInfo.OpenId, Valid: u.WechatInfo.OpenId != ""},
+		WetchatUnionId: sql.NullString{String: u.WechatInfo.UnionId, Valid: u.WechatInfo.UnionId != ""},
 	}
 }
 

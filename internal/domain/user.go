@@ -10,9 +10,10 @@ type User struct {
 	//UTC 0 的时区
 	Ctime time.Time
 	//Addr     Address
-	Nickname string
-	Birthday time.Time
-	AboutMe  string
+	Nickname   string
+	Birthday   time.Time
+	AboutMe    string
+	WechatInfo WechatInfo
 }
 
 //type Address struct {

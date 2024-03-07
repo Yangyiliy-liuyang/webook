@@ -20,9 +20,16 @@ type UserDAO interface {
 	InsertInfo(ctx context.Context, u User) error
 	FindById(ctx context.Context, uid int64) (User, error)
 	FindByPhone(ctx context.Context, phone string) (User, error)
+	FindByWechat(ctx context.Context, OpenId string) (User, error)
 }
 type GormUserDAO struct {
 	db *gorm.DB
+}
+
+func (dao *GormUserDAO) FindByWechat(ctx context.Context, openId string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("wechat_open_id=?", openId).First(&u).Error
+	return u, err
 }
 
 func NewGormUserDAO(db *gorm.DB) UserDAO {
@@ -87,9 +94,10 @@ type User struct {
 	// 整个系统内部都使用UTC 0 的时区，
 	// 在要返回给前端的时候才改成UTF8 或者直接交给前端处理
 	//服务器 go应用 数据库
-
-	Ctime int64
-	Utime int64
+	WetchatOpenId  sql.NullString `gorm:"unique"`
+	WetchatUnionId sql.NullString
+	Ctime          int64
+	Utime          int64
 
 	//json
 	//Addr string

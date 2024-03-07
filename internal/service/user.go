@@ -20,6 +20,7 @@ type UserService interface {
 	UpdateUserInfo(ctx context.Context, user domain.User) error
 	FindOrCreate(ctx context.Context, phone string) (domain.User, error)
 	FindById(ctx context.Context, id int64) (domain.User, error)
+	FindOrCreateByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error)
 }
 
 type userService struct {
@@ -29,6 +30,22 @@ type userService struct {
 // todo 返回接口类型，方便和wire结合使用，go推荐返回具体类型
 func NewUserService(repo repository.UserRepository) UserService {
 	return &userService{repo: repo}
+}
+
+func (svc *userService) FindOrCreateByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
+	u, err := svc.repo.FindByWechat(ctx, wechatInfo.OpenId)
+	if !errors.Is(err, repository.ErrUserNotFound) {
+		//err!=nil 系统错误 或者 err==nil 已经找到
+		return u, err
+	}
+	err = svc.repo.Create(ctx, domain.User{
+		WechatInfo: wechatInfo,
+	})
+	if err != nil || !errors.Is(err, ErrDuplicateUser) {
+		// 有错误，但是不是phone唯一索引错误   系统错误
+		return domain.User{}, err
+	}
+	return svc.repo.FindByWechat(ctx, wechatInfo.OpenId)
 }
 
 func (svc *userService) SingUp(ctx context.Context, u domain.User) error {

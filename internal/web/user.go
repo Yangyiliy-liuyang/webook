@@ -4,7 +4,6 @@ import (
 	"errors"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"time"
 	"webook/internal/domain"
@@ -29,6 +28,7 @@ type UserHandler struct {
 	passwordRegexExp *regexp.Regexp
 	svc              service.UserService
 	codeSvc          service.CodeService
+	JWTHandler
 }
 
 func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
@@ -247,33 +247,6 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	default:
 		ctx.String(http.StatusOK, "系统错误")
 	}
-}
-
-var JWTKey = []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgX")
-
-type UserClaims struct {
-	jwt.RegisteredClaims
-	Uid       int64
-	UserAgent string
-}
-
-func (h *UserHandler) setTokenByJWT(ctx *gin.Context, uid int64) {
-	uc := UserClaims{
-		Uid:       uid,
-		UserAgent: ctx.GetHeader("User-Agent"),
-		RegisteredClaims: jwt.RegisteredClaims{
-			// 30分钟过期
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-			Issuer:    "webook",
-		}}
-	//使用指定的签名方法创建
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-	// token 是结构体，改成jwt字节切片传给前端
-	tokenString, err := token.SignedString(JWTKey)
-	if err != nil {
-		ctx.String(http.StatusOK, "系统错误")
-	}
-	ctx.Header("x-jwt-token", tokenString)
 }
 
 func (h *UserHandler) SendSSMLoginCode(ctx *gin.Context) {
