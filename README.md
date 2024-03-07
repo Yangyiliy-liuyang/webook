@@ -11,7 +11,7 @@ gin
 + sms 
 + lua脚本 
 + wire 
-+ + mock + sqlmock 
++ mock + sqlmock 
 + 
 ## 目录结构
 ## 启动

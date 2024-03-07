@@ -33,7 +33,7 @@ func main() {
 //func initCodeSvc(redisClient redis.Cmdable) *service.CodeService {
 //	cc := cache.NewCodeCache(redisClient)
 //	cr := repository.NewCodeRepository(cc)
-//	// todo
+//
 //	return service.NewCodeService(cr, initMemorySms())
 //}
 //
