@@ -25,6 +25,7 @@ func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService) *OA
 		userSvc:         userSvc,
 		key:             []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgC"),
 		stateCookieName: "jwt-state",
+		JWTHandler:      newJWTHandler(),
 	}
 }
 
@@ -80,7 +81,10 @@ func (o *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 		return
 	}
 	u, err := o.userSvc.FindOrCreateByWechat(ctx, wechatInfo)
-	o.setTokenByJWT(ctx, u.Id)
+	err = o.setLoginToken(ctx, u.Id)
+	if err != nil {
+		return
+	}
 	resp.SetGeneral(true, 0, "success")
 	resp.SetData(nil)
 }

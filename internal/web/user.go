@@ -4,9 +4,11 @@ import (
 	"errors"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"time"
 	"webook/internal/domain"
+	"webook/internal/domain/proctocol"
 	"webook/internal/service"
 )
 
@@ -37,6 +39,7 @@ func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserH
 		passwordRegexExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:              svc,
 		codeSvc:          codeSvc,
+		JWTHandler:       newJWTHandler(),
 	}
 }
 
@@ -63,6 +66,8 @@ func (h *UserHandler) RegisterRouter(server *gin.Engine) {
 	ug.POST("/login", h.LoginJWT)
 	ug.POST("/edit", h.Edit)
 	ug.GET("/profile", h.Profile)
+
+	ug.GET("/refresh_token", h.RefreshToken)
 	//触发发送验证码
 	ug.POST("/login_sms/code/send", h.SendSSMLoginCode)
 	//效验验证码
@@ -240,7 +245,10 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	u, err := h.svc.Login(ctx, req.Email, req.Password)
 	switch {
 	case err == nil:
-		h.setTokenByJWT(ctx, u.Id)
+		err := h.setLoginToken(ctx, u.Id)
+		if err != nil {
+			return
+		}
 		ctx.String(http.StatusOK, "登录成功")
 	case errors.Is(err, service.ErrInvalidUserOrPassword):
 		ctx.String(http.StatusOK, "用户名或者密码不对")
@@ -314,9 +322,40 @@ func (h *UserHandler) LoginSSM(ctx *gin.Context) {
 	if err != nil {
 		return
 	}
-	h.setTokenByJWT(ctx, u.Id)
+	err = h.setLoginToken(ctx, u.Id)
+	if err != nil {
+		return
+	}
 	ctx.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "验证成功",
 	})
+}
+
+func (h *UserHandler) RefreshToken(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	tokenStr := ExtractToken(ctx)
+	var rc RefreshClaims
+	//
+	token, err := jwt.ParseWithClaims(tokenStr, &rc, func(token *jwt.Token) (interface{}, error) {
+		return h.setRefreshToken, nil
+	})
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		resp.SetGeneral(true, 1, "token无效")
+		return
+	}
+	if token == nil || !token.Valid {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		resp.SetGeneral(true, 1, "token无效")
+		return
+	}
+	err = h.setJWTToken(ctx, rc.Uid, rc.Ssid)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		resp.SetGeneral(true, 1, "token刷新失败")
+		return
+	}
+	resp.SetGeneral(true, 0, "token刷新成功")
+	resp.SetData(nil)
 }
