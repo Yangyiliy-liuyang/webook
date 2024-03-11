@@ -1,4 +1,4 @@
-package web
+package jwt
 
 import (
 	"fmt"
@@ -11,22 +11,36 @@ import (
 	"time"
 )
 
-type JWTHandler struct {
+var _ Handler = &RedisJWTHandler{}
+
+type RedisJWTHandler struct {
 	signingMethod jwt.SigningMethod
-	refreshKey    []byte
 	cmd           redis.Cmdable
 	rcExpiration  time.Duration
 }
 
-func newJWTHandler() JWTHandler {
-	return JWTHandler{
+func NewRedisJWTHandler(cmd redis.Cmdable) RedisJWTHandler {
+	return RedisJWTHandler{
 		signingMethod: jwt.SigningMethodHS512,
-		refreshKey:    []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgC"),
+		cmd:           cmd,
 		rcExpiration:  time.Hour * 24 * 7,
 	}
 }
 
-func (h *JWTHandler) clearToken(ctx *gin.Context) error {
+func (h *RedisJWTHandler) CheckSession(ctx *gin.Context, ssid string) error {
+	cnt, err := h.cmd.Exists(ctx, fmt.Sprintf("user:ssid:%s", ssid)).Result()
+	if err != nil {
+		//做好Redis崩溃的预警
+		return err
+	}
+	if cnt > 0 {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return fmt.Errorf("token已过期")
+	}
+	return nil
+}
+
+func (h *RedisJWTHandler) ClearToken(ctx *gin.Context) error {
 	ctx.Header("x-refresh-token", "")
 	ctx.Header("x-jwt-token", "")
 	uc := ctx.MustGet("user").(UserClaims)
@@ -34,18 +48,20 @@ func (h *JWTHandler) clearToken(ctx *gin.Context) error {
 	return err
 }
 
-func (h *JWTHandler) setLoginToken(ctx *gin.Context, uid int64) error {
+func (h *RedisJWTHandler) SetLoginToken(ctx *gin.Context, uid int64) error {
 	ssid := uuid.New().String()
-	err := h.setRefreshToken(ctx, uid, ssid)
+	err := h.SetRefreshToken(ctx, uid, ssid)
 	if err != nil {
 		return err
 	}
-	err = h.setJWTToken(ctx, uid, ssid)
+	err = h.SetJWTToken(ctx, uid, ssid)
 	if err != nil {
 		return err
 	}
 	return nil
 }
+
+var RCJWTKey = []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgC")
 
 type RefreshClaims struct {
 	jwt.RegisteredClaims
@@ -53,7 +69,7 @@ type RefreshClaims struct {
 	Ssid string
 }
 
-func (h *JWTHandler) setRefreshToken(ctx *gin.Context, uid int64, ssid string) error {
+func (h *RedisJWTHandler) SetRefreshToken(ctx *gin.Context, uid int64, ssid string) error {
 	rc := RefreshClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(h.rcExpiration)),
@@ -62,7 +78,7 @@ func (h *JWTHandler) setRefreshToken(ctx *gin.Context, uid int64, ssid string) e
 		Ssid: ssid,
 	}
 	claims := jwt.NewWithClaims(h.signingMethod, rc)
-	signedString, err := claims.SignedString(h.refreshKey)
+	signedString, err := claims.SignedString(RCJWTKey)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return err
@@ -71,7 +87,7 @@ func (h *JWTHandler) setRefreshToken(ctx *gin.Context, uid int64, ssid string) e
 	return nil
 }
 
-func ExtractToken(ctx *gin.Context) string {
+func (h *RedisJWTHandler) ExtractToken(ctx *gin.Context) string {
 	// 根据约定 token在Authorization头部
 	// Bearer xxx
 	authCode := ctx.GetHeader("Authorization")
@@ -99,7 +115,7 @@ type UserClaims struct {
 	UserAgent string
 }
 
-func (h *JWTHandler) setJWTToken(ctx *gin.Context, uid int64, ssid string) error {
+func (h *RedisJWTHandler) SetJWTToken(ctx *gin.Context, uid int64, ssid string) error {
 	uc := UserClaims{
 		Uid:       uid,
 		Ssid:      ssid,

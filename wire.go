@@ -26,7 +26,7 @@ func InitWebServer() *gin.Engine {
 		//service
 		ioc.InitSMSService, ioc.InitWechatService, service.NewUserService, service.NewCodeService,
 		//handler
-		web.NewUserHandler, web.NewOAuth2WechatHandler, ioc.InitGinMiddleware, ioc.InitWebService,
+		web.NewUserHandler, ijwt.NewJWTHandler, web.NewOAuth2WechatHandler, ioc.InitGinMiddleware, ioc.InitWebService,
 	)
 	return gin.Default()
 }

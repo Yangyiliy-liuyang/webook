@@ -9,23 +9,24 @@ import (
 	"webook/internal/domain/proctocol"
 	"webook/internal/service"
 	"webook/internal/service/oauth2/wechat"
+	ijwt "webook/internal/web/jwt"
 )
 
 type OAuth2WechatHandler struct {
 	svc     wechat.Service
 	userSvc service.UserService
-	JWTHandler
+	ijwt.Handler
 	key             []byte
 	stateCookieName string
 }
 
-func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService) *OAuth2WechatHandler {
+func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService, hdl ijwt.Handler) *OAuth2WechatHandler {
 	return &OAuth2WechatHandler{
 		svc:             svc,
 		userSvc:         userSvc,
 		key:             []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgC"),
 		stateCookieName: "jwt-state",
-		JWTHandler:      newJWTHandler(),
+		Handler:         hdl,
 	}
 }
 
@@ -81,7 +82,7 @@ func (o *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 		return
 	}
 	u, err := o.userSvc.FindOrCreateByWechat(ctx, wechatInfo)
-	err = o.setLoginToken(ctx, u.Id)
+	err = o.SetLoginToken(ctx, u.Id)
 	if err != nil {
 		return
 	}

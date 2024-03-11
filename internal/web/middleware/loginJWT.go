@@ -4,10 +4,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
-	"webook/internal/web"
+	ijwt "webook/internal/web/jwt"
 )
 
 type LoginJWTMilddlewareBuilder struct {
+	ijwt.Handler
+}
+
+func NewLoginJWTMilddlewareBuilder(hdl ijwt.Handler) *LoginJWTMilddlewareBuilder {
+	return &LoginJWTMilddlewareBuilder{
+		Handler: hdl,
+	}
 }
 
 func (m *LoginJWTMilddlewareBuilder) CheckLoginJWT() gin.HandlerFunc {
@@ -21,10 +28,10 @@ func (m *LoginJWTMilddlewareBuilder) CheckLoginJWT() gin.HandlerFunc {
 			path == "/oauth2/wechat/callback" {
 			return
 		}
-		tokenStr := web.ExtractToken(ctx)
-		var uc web.UserClaims
+		tokenStr := m.ExtractToken(ctx)
+		var uc ijwt.UserClaims
 		token, err := jwt.ParseWithClaims(tokenStr, &uc, func(token *jwt.Token) (interface{}, error) {
-			return web.JWTKey, nil
+			return ijwt.JWTKey, nil
 		})
 		if err != nil {
 			//token不对伪造的
@@ -56,6 +63,11 @@ func (m *LoginJWTMilddlewareBuilder) CheckLoginJWT() gin.HandlerFunc {
 		//		log.Println(err)
 		//	}
 		//}
+		err = m.CheckSession(ctx, uc.Ssid)
+		if err != nil {
+			//做好Redis崩溃的预警
+			return
+		}
 		ctx.Set("user", uc)
 	}
 }

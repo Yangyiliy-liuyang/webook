@@ -2,7 +2,6 @@ package web
 
 import (
 	"errors"
-	"fmt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -11,6 +10,7 @@ import (
 	"webook/internal/domain"
 	"webook/internal/domain/proctocol"
 	"webook/internal/service"
+	ijwt "webook/internal/web/jwt"
 )
 
 const (
@@ -31,16 +31,16 @@ type UserHandler struct {
 	passwordRegexExp *regexp.Regexp
 	svc              service.UserService
 	codeSvc          service.CodeService
-	JWTHandler
+	ijwt.Handler
 }
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService, hdl ijwt.Handler) *UserHandler {
 	return &UserHandler{
 		emailRegexExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRegexExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:              svc,
 		codeSvc:          codeSvc,
-		JWTHandler:       newJWTHandler(),
+		Handler:          hdl,
 	}
 }
 
@@ -247,7 +247,7 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	u, err := h.svc.Login(ctx, req.Email, req.Password)
 	switch {
 	case err == nil:
-		err := h.setLoginToken(ctx, u.Id)
+		err := h.SetLoginToken(ctx, u.Id)
 		if err != nil {
 			return
 		}
@@ -324,7 +324,7 @@ func (h *UserHandler) LoginSSM(ctx *gin.Context) {
 	if err != nil {
 		return
 	}
-	err = h.setLoginToken(ctx, u.Id)
+	err = h.SetLoginToken(ctx, u.Id)
 	if err != nil {
 		return
 	}
@@ -336,11 +336,11 @@ func (h *UserHandler) LoginSSM(ctx *gin.Context) {
 
 func (h *UserHandler) RefreshToken(ctx *gin.Context) {
 	resp := proctocol.RespGeneral{}
-	tokenStr := ExtractToken(ctx)
-	var rc RefreshClaims
+	tokenStr := h.ExtractToken(ctx)
+	var rc ijwt.RefreshClaims
 	//
 	token, err := jwt.ParseWithClaims(tokenStr, &rc, func(token *jwt.Token) (interface{}, error) {
-		return h.setRefreshToken, nil
+		return ijwt.RCJWTKey, nil
 	})
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
@@ -352,12 +352,12 @@ func (h *UserHandler) RefreshToken(ctx *gin.Context) {
 		resp.SetGeneral(true, 1, "token无效")
 		return
 	}
-	cnt, err := h.cmd.Exists(ctx, fmt.Sprintf("user:ssid:%s", rc.Ssid)).Result()
-	if err != nil || cnt > 0 {
+	err = h.CheckSession(ctx, rc.Ssid)
+	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	err = h.setJWTToken(ctx, rc.Uid, rc.Ssid)
+	err = h.SetJWTToken(ctx, rc.Uid, rc.Ssid)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		resp.SetGeneral(true, 1, "token刷新失败")
@@ -372,7 +372,7 @@ func (h *UserHandler) LogoutJWT(ctx *gin.Context) {
 	defer func() {
 		ctx.JSON(http.StatusOK, resp)
 	}()
-	err := h.JWTHandler.clearToken(ctx)
+	err := h.ClearToken(ctx)
 	if err != nil {
 		resp.SetGeneral(true, 1, "系统错误")
 	}

@@ -3,9 +3,11 @@ package ioc
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"strings"
 	"time"
 	"webook/internal/web"
+	ijwt "webook/internal/web/jwt"
 	"webook/internal/web/middleware"
 )
 
@@ -17,7 +19,7 @@ func InitWebService(funcs []gin.HandlerFunc, userHdl *web.UserHandler, wechatHdl
 	return server
 }
 
-func InitGinMiddleware() []gin.HandlerFunc {
+func InitGinMiddleware(cmd redis.Cmdable, hdl ijwt.Handler) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		cors.New(cors.Config{
 			//AllowOrigins: []string{"http://localhost:3030"},
@@ -35,6 +37,6 @@ func InitGinMiddleware() []gin.HandlerFunc {
 			MaxAge: 12 * time.Hour,
 		}),
 		// todo 限流
-		(&middleware.LoginJWTMilddlewareBuilder{}).CheckLoginJWT(),
+		middleware.NewLoginJWTMilddlewareBuilder(hdl).CheckLoginJWT(),
 	}
 }
