@@ -1,7 +1,9 @@
 package web
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"net/http"
@@ -12,14 +14,26 @@ import (
 type JWTHandler struct {
 	signingMethod jwt.SigningMethod
 	refreshKey    []byte
+	cmd           redis.Cmdable
+	rcExpiration  time.Duration
 }
 
 func newJWTHandler() JWTHandler {
 	return JWTHandler{
 		signingMethod: jwt.SigningMethodHS512,
 		refreshKey:    []byte("Cw7kG6rkQi3WUJ7svOrK4KMStXQ6ykgC"),
+		rcExpiration:  time.Hour * 24 * 7,
 	}
 }
+
+func (h *JWTHandler) clearToken(ctx *gin.Context) error {
+	ctx.Header("x-refresh-token", "")
+	ctx.Header("x-jwt-token", "")
+	uc := ctx.MustGet("user").(UserClaims)
+	err := h.cmd.Set(ctx, fmt.Sprintf("user:ssid:%s", uc.Ssid), "", h.rcExpiration).Err()
+	return err
+}
+
 func (h *JWTHandler) setLoginToken(ctx *gin.Context, uid int64) error {
 	ssid := uuid.New().String()
 	err := h.setRefreshToken(ctx, uid, ssid)
@@ -42,7 +56,7 @@ type RefreshClaims struct {
 func (h *JWTHandler) setRefreshToken(ctx *gin.Context, uid int64, ssid string) error {
 	rc := RefreshClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(h.rcExpiration)),
 		},
 		Uid:  uid,
 		Ssid: ssid,
@@ -92,7 +106,7 @@ func (h *JWTHandler) setJWTToken(ctx *gin.Context, uid int64, ssid string) error
 		UserAgent: ctx.GetHeader("User-Agent"),
 		RegisteredClaims: jwt.RegisteredClaims{
 			// 30分钟过期
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(h.rcExpiration)),
 			Issuer:    "webook",
 		}}
 	//使用指定的签名方法创建

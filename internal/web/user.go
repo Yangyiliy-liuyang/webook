@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"fmt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -64,6 +65,7 @@ func (h *UserHandler) RegisterRouter(server *gin.Engine) {
 	ug.POST("/signup", h.SignUp)
 	//ug.POST("/login", h.Login)
 	ug.POST("/login", h.LoginJWT)
+	ug.POST("/logout", h.LogoutJWT)
 	ug.POST("/edit", h.Edit)
 	ug.GET("/profile", h.Profile)
 
@@ -350,6 +352,11 @@ func (h *UserHandler) RefreshToken(ctx *gin.Context) {
 		resp.SetGeneral(true, 1, "token无效")
 		return
 	}
+	cnt, err := h.cmd.Exists(ctx, fmt.Sprintf("user:ssid:%s", rc.Ssid)).Result()
+	if err != nil || cnt > 0 {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	err = h.setJWTToken(ctx, rc.Uid, rc.Ssid)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
@@ -357,5 +364,18 @@ func (h *UserHandler) RefreshToken(ctx *gin.Context) {
 		return
 	}
 	resp.SetGeneral(true, 0, "token刷新成功")
+	resp.SetData(nil)
+}
+
+func (h *UserHandler) LogoutJWT(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
+	err := h.JWTHandler.clearToken(ctx)
+	if err != nil {
+		resp.SetGeneral(true, 1, "系统错误")
+	}
+	resp.SetGeneral(true, 0, "退出成功")
 	resp.SetData(nil)
 }
