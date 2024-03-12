@@ -15,6 +15,7 @@ type CodeService interface {
 	Send(ctx context.Context, biz, phone string) error
 	Verify(ctx context.Context, biz, phone string, inputCode string) (bool, error)
 }
+
 type codeService struct {
 	repo repository.CodeRepository
 	sms  *localsms.Service

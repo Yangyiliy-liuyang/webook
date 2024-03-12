@@ -11,7 +11,13 @@ import (
 	"time"
 )
 
-var _ Handler = &RedisJWTHandler{}
+type Handler interface {
+	ExtractToken(ctx *gin.Context) string
+	SetLoginToken(ctx *gin.Context, uid int64) error
+	SetJWTToken(ctx *gin.Context, uid int64, ssid string) error
+	ClearToken(ctx *gin.Context) error
+	CheckSession(ctx *gin.Context, ssid string) error
+}
 
 type RedisJWTHandler struct {
 	signingMethod jwt.SigningMethod
@@ -19,11 +25,11 @@ type RedisJWTHandler struct {
 	rcExpiration  time.Duration
 }
 
-func NewRedisJWTHandler(cmd redis.Cmdable) RedisJWTHandler {
-	return RedisJWTHandler{
-		signingMethod: jwt.SigningMethodHS512,
+func NewRedisJWTHandler(cmd redis.Cmdable) Handler {
+	return &RedisJWTHandler{
+		signingMethod: jwt.SigningMethodHS256,
 		cmd:           cmd,
-		rcExpiration:  time.Hour * 24 * 7,
+		rcExpiration:  time.Minute * 30,
 	}
 }
 
