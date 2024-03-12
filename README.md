@@ -11,8 +11,11 @@ gin
 + sms 
 + lua脚本 
 + wire 
-+ mock + sqlmock 
-+ 
++ mock 
++ sqlmock 
++ viper
++ etcd
++ Zap
 ## 目录结构
 ## 启动
 docker compose up
@@ -41,5 +44,5 @@ docker compose up
 ### 面向接口编程 超前设计 最小化实现
 ### 单元测试 集成测试 mock sqlmock
 ### 微信登录
-
+### Viper配置管理 etcd远程配置中心
 
