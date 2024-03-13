@@ -1,9 +1,9 @@
 package wechat
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/url"
 	"webook/internal/domain"
@@ -25,11 +25,6 @@ func NewService(appId string, appSecret string) Service {
 	}
 }
 
-type Service interface {
-	AuthURL(ctx context.Context, state string) (string, error)
-	VerifyCode(ctx context.Context, code string) (domain.WechatInfo, error)
-}
-
 type WechatResult struct {
 	AccessToken  string `json:"access_token"`  //接口调用凭证
 	ExpiresIn    int64  `json:"expires_in"`    // 接口调用凭证的超时时间，单位：秒
@@ -43,7 +38,7 @@ type WechatResult struct {
 }
 
 // 通过code发起调用获取accessToken
-func (s *service) VerifyCode(ctx context.Context, code string) (domain.WechatInfo, error) {
+func (s *service) VerifyCode(ctx *gin.Context, code string) (domain.WechatInfo, error) {
 	accessTokenUrl := fmt.Sprintf("https://api.weixin.qq.com/sns/oauth2/access_token?appid=%s&secret=%s&code=%s&grant_type=authorization_code", s.appId, s.appSecret, code)
 	Req, err := http.NewRequestWithContext(ctx, http.MethodGet, accessTokenUrl, nil)
 	if err != nil {
@@ -67,7 +62,7 @@ func (s *service) VerifyCode(ctx context.Context, code string) (domain.WechatInf
 	}, nil
 }
 
-func (s *service) AuthURL(ctx context.Context, state string) (string, error) {
+func (s *service) AuthURL(ctx *gin.Context, state string) (string, error) {
 	// 微信接口链接 https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html
 	const authURLPattern = "https://open.weixin.qq.com/connect/qrconnect?appid=%s&redirect_uri=%s&response_type=code&scope=snsapi_login&state=%s#wechat_redirect"
 	return fmt.Sprintf(authURLPattern, s.appId, redirectURL, state), nil

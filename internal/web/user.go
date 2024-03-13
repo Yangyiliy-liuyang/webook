@@ -5,6 +5,7 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 	"webook/internal/domain"
@@ -288,6 +289,7 @@ func (h *UserHandler) SendSSMLoginCode(ctx *gin.Context) {
 			Msg:  "短信发送太频繁",
 			Data: nil,
 		})
+		zap.L().Warn("短信发送太频繁")
 	default:
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
@@ -297,6 +299,10 @@ func (h *UserHandler) SendSSMLoginCode(ctx *gin.Context) {
 }
 
 func (h *UserHandler) LoginSSM(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
 	type Req struct {
 		Phone string `json:"phone"`
 		Code  string `json:"code"`
@@ -305,21 +311,16 @@ func (h *UserHandler) LoginSSM(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	//ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
-	/*if err != nil {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
+	ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
+	if err != nil {
+		resp.SetGeneral(true, 1, "系统错误")
+		zap.L().Error("code verify error", zap.Error(err))
 		return
 	}
 	if !ok {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 4,
-			Msg:  "验证码错误，请重新输入",
-		})
+		resp.SetGeneral(true, 2, "验证码不正确")
 		return
-	}*/
+	}
 	u, err := h.svc.FindOrCreate(ctx, req.Phone)
 	if err != nil {
 		return
@@ -328,10 +329,8 @@ func (h *UserHandler) LoginSSM(ctx *gin.Context) {
 	if err != nil {
 		return
 	}
-	ctx.JSON(http.StatusOK, Result{
-		Code: 200,
-		Msg:  "验证成功",
-	})
+	resp.SetGeneral(true, 0, "登录成功")
+	resp.SetData(nil)
 }
 
 func (h *UserHandler) RefreshToken(ctx *gin.Context) {

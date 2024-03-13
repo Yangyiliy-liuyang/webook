@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"webook/internal/domain"
 	"webook/internal/repository"
@@ -24,12 +25,16 @@ type UserService interface {
 }
 
 type userService struct {
-	repo repository.UserRepository
+	repo   repository.UserRepository
+	logger *zap.Logger
 }
 
 // todo 返回接口类型，方便和wire结合使用，go推荐返回具体类型
 func NewUserService(repo repository.UserRepository) UserService {
-	return &userService{repo: repo}
+	return &userService{
+		repo:   repo,
+		logger: zap.L(),
+	}
 }
 
 func (svc *userService) FindOrCreateByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
@@ -38,6 +43,11 @@ func (svc *userService) FindOrCreateByWechat(ctx context.Context, wechatInfo dom
 		//err!=nil 系统错误 或者 err==nil 已经找到
 		return u, err
 	}
+
+	// 新用户 JSON格式的wechatInfo
+	//zap.L().Info("new user by wechat", zap.Any("wechatInfo", wechatInfo))
+	// 使用依赖注入的方式记录日志
+	svc.logger.Info("new user by wechat", zap.Any("wechatInfo", wechatInfo))
 	err = svc.repo.Create(ctx, domain.User{
 		WechatInfo: wechatInfo,
 	})
