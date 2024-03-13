@@ -5,6 +5,13 @@
       <option name="cgo" value="NO" />
     </buildTags>
   </component>
+  <component name="GoLibraries">
+    <option name="urls">
+      <list>
+        <option value="file://D:/Program/Go" />
+      </list>
+    </option>
+  </component>
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />

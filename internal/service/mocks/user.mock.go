@@ -22,6 +22,11 @@ type MockUserService struct {
 	recorder *MockUserServiceMockRecorder
 }
 
+func (m *MockUserService) FindOrCreateByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 // MockUserServiceMockRecorder is the mock recorder for MockUserService.
 type MockUserServiceMockRecorder struct {
 	mock *MockUserService

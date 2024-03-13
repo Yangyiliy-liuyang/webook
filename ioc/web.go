@@ -1,14 +1,15 @@
 package ioc
 
 import (
+	"context"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"strings"
 	"time"
 	"webook/internal/web"
 	ijwt "webook/internal/web/jwt"
 	"webook/internal/web/middleware"
+	"webook/pkg/logger"
 )
 
 func InitWebService(funcs []gin.HandlerFunc, userHdl *web.UserHandler, wechatHdl *web.OAuth2WechatHandler) *gin.Engine {
@@ -19,7 +20,7 @@ func InitWebService(funcs []gin.HandlerFunc, userHdl *web.UserHandler, wechatHdl
 	return server
 }
 
-func InitGinMiddleware(cmd redis.Cmdable, hdl ijwt.Handler) []gin.HandlerFunc {
+func InitGinMiddleware(hdl ijwt.Handler, l *logger.ZapLogger) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		cors.New(cors.Config{
 			//AllowOrigins: []string{"http://localhost:3030"},
@@ -37,6 +38,12 @@ func InitGinMiddleware(cmd redis.Cmdable, hdl ijwt.Handler) []gin.HandlerFunc {
 			MaxAge: 12 * time.Hour,
 		}),
 		// todo 限流
+		middleware.NewLogMiddlewareBuilder(func(ctx context.Context, al middleware.AcessLog) {
+			l.Debug("", logger.Field{
+				Key:   "req",
+				Value: al,
+			})
+		}).AllowReqBody().AllowRespBody().Build(),
 		middleware.NewLoginJWTMilddlewareBuilder(hdl).CheckLoginJWT(),
 	}
 }
