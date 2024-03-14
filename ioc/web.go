@@ -12,15 +12,19 @@ import (
 	"webook/pkg/logger"
 )
 
-func InitWebService(funcs []gin.HandlerFunc, userHdl *web.UserHandler, wechatHdl *web.OAuth2WechatHandler) *gin.Engine {
+func InitWebService(funcs []gin.HandlerFunc,
+	userHdl *web.UserHandler,
+	wechatHdl *web.OAuth2WechatHandler,
+	artHdl *web.ArticleHandler) *gin.Engine {
 	server := gin.Default()
 	server.Use(funcs...)
 	userHdl.RegisterRouter(server)
 	wechatHdl.RegisterRouters(server)
+	artHdl.RegisterRouter(server)
 	return server
 }
 
-func InitGinMiddleware(hdl ijwt.Handler, l *logger.ZapLogger) []gin.HandlerFunc {
+func InitGinMiddleware(hdl ijwt.Handler, l logger.Logger) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		cors.New(cors.Config{
 			//AllowOrigins: []string{"http://localhost:3030"},

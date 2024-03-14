@@ -46,7 +46,7 @@ func TestUserEmailPattern(t *testing.T) {
 			match: true,
 		},
 	}
-	handler := NewUserHandler(nil, nil)
+	handler := NewUserHandler(nil, nil, nil)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			match, err := handler.emailRegexExp.MatchString(tc.email)
@@ -230,7 +230,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			defer ctrl.Finish()
 			// 构造 handler
 			userSvc, codeSvc := tc.mock(ctrl)
-			hdl := NewUserHandler(userSvc, codeSvc)
+			hdl := NewUserHandler(userSvc, codeSvc, nil)
 			// 准备服务器，注册路由
 			server := gin.Default()
 			hdl.RegisterRouter(server)

@@ -6,7 +6,7 @@ import (
 	"webook/pkg/logger"
 )
 
-func InitLogger() *logger.ZapLogger {
+func InitLogger() logger.Logger {
 	cfg := zap.NewDevelopmentConfig()
 	err := viper.UnmarshalKey("log", &cfg)
 	if err != nil {
@@ -20,11 +20,6 @@ func InitLogger() *logger.ZapLogger {
 	return logger.NewZapLogger(l)
 }
 
-func _InitLogger() *logger.ZapLogger {
-	l, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
-	defer l.Sync() // flushes buffer, if any
-	return logger.NewZapLogger(l)
+func _InitNopLogger() logger.Logger {
+	return logger.NewNopLogger()
 }

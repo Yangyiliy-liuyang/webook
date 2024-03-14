@@ -1,0 +1,5 @@
+test:
+  key: value
+
+db:
+  dsn : "root:root@tcp(localhost:13316)/webook"

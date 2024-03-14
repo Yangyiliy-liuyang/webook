@@ -1,12 +1,9 @@
 package logger
 
-import "go.uber.org/zap"
-
 type NopLogger struct {
-	Logger zap.Logger
 }
 
-func NewNopLogger() *NopLogger {
+func NewNopLogger() Logger {
 	return &NopLogger{}
 }
 func (z *NopLogger) Debug(msg string, args ...Field) {

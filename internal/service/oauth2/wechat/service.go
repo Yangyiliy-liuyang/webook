@@ -16,10 +16,10 @@ type service struct {
 	appId     string
 	appSecret string
 	client    *http.Client
-	l         *logger.ZapLogger
+	l         logger.Logger
 }
 
-func NewService(appId string, appSecret string, l *logger.ZapLogger) Service {
+func NewService(appId string, appSecret string, l logger.Logger) Service {
 	return &service{
 		appId:     appId,
 		appSecret: appSecret,
