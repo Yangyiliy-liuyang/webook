@@ -203,14 +203,16 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 
 // Profile 拿到用户基本信息
 func (h *UserHandler) Profile(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
 	// todo token中取出Id
 	uid := 1
 	u, err := h.svc.FindById(ctx, int64(uid))
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
+		resp.SetGeneral(true, 1, "系统错误")
+		return
 	}
 	type User struct {
 		Email           string `json:"email"`
@@ -222,17 +224,14 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 		Birthday time.Time `json:"birthday"`
 		AboutMe  string    `json:"aboutMe"`
 	}
-	ctx.JSON(http.StatusOK, Result{
-		Code: 200,
-		Msg:  "profile success",
-		Data: User{
-			Email:    u.Email,
-			Phone:    u.Phone,
-			Nickname: u.Nickname,
-			Password: u.Password,
-			Birthday: u.Birthday,
-			AboutMe:  u.AboutMe,
-		},
+	resp.SetGeneral(true, http.StatusOK, "profile success")
+	resp.SetData(User{
+		Email:    u.Email,
+		Phone:    u.Phone,
+		Nickname: u.Nickname,
+		Password: u.Password,
+		Birthday: u.Birthday,
+		AboutMe:  u.AboutMe,
 	})
 }
 
@@ -261,6 +260,10 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 }
 
 func (h *UserHandler) SendSSMLoginCode(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
 	type Req struct {
 		Phone string `json:"phone"`
 	}
@@ -269,32 +272,23 @@ func (h *UserHandler) SendSSMLoginCode(ctx *gin.Context) {
 		return
 	}
 	if req.Phone == "" {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 4,
-			Msg:  "请输入手机号码",
-		})
+		resp.SetGeneral(true, http.StatusBadRequest, "phone is empty")
 		return
 	}
 	err := h.codeSvc.Send(ctx, bizLogin, req.Phone)
 	switch {
 	case err == nil:
-		ctx.JSON(http.StatusOK, Result{
-			Code: 200,
-			Msg:  "发送成功",
-		})
+		resp.SetGeneral(true, http.StatusOK, "发送成功")
+		resp.SetData(nil)
 		return
 	case errors.Is(err, service.ErrCodeSendTooMany):
-		ctx.JSON(http.StatusOK, Result{
-			Code: 4,
-			Msg:  "短信发送太频繁",
-			Data: nil,
-		})
+		resp.SetGeneral(true, http.StatusTooManyRequests, "发送太频繁")
 		zap.L().Warn("短信发送太频繁")
+		return
 	default:
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统错误")
+		zap.L().Error("短信发送失败", zap.Error(err))
+		return
 	}
 }
 

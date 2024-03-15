@@ -25,6 +25,40 @@ func NewArticleHandler(svc service.ArticleService, l logger.Logger) *ArticleHand
 func (a *ArticleHandler) RegisterRouter(server *gin.Engine) {
 	g := server.Group("/articles")
 	g.POST("/edit", a.Edit)
+	g.POST("/publish", a.Publish)
+}
+
+func (a *ArticleHandler) Publish(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
+	type Req struct {
+		ID      int64 `json:"id"`
+		Title   string
+		Content string
+	}
+	var req Req
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
+		return
+	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	artId, err := a.svc.Publish(ctx, domain.Article{
+		Id:      req.ID,
+		Title:   req.Title,
+		Content: req.Content,
+		Author: domain.Author{
+			Id: uc.Uid,
+		},
+	})
+	if err != nil {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+		a.l.Error("发布文章数据失败", logger.Int64("uid", uc.Uid), logger.Error(err))
+		return
+	}
+	resp.SetGeneral(true, http.StatusOK, "ok")
+	resp.SetData(artId)
 }
 
 func (a *ArticleHandler) Edit(ctx *gin.Context) {
@@ -33,6 +67,7 @@ func (a *ArticleHandler) Edit(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, resp)
 	}()
 	type Req struct {
+		ID      int64  `json:"id"`
 		Title   string `json:"title"`
 		Content string `json:"content"`
 	}
@@ -42,11 +77,12 @@ func (a *ArticleHandler) Edit(ctx *gin.Context) {
 		return
 	}
 	uc := ctx.MustGet("user").(ijwt.UserClaims)
-	_, err := a.svc.Save(ctx, domain.Article{
+	artId, err := a.svc.Save(ctx, domain.Article{
+		Id:      req.ID,
 		Title:   req.Title,
 		Content: req.Content,
 		Author: domain.Author{
-			ID: uc.Uid,
+			Id: uc.Uid,
 		},
 	})
 	if err != nil {
@@ -55,4 +91,5 @@ func (a *ArticleHandler) Edit(ctx *gin.Context) {
 		return
 	}
 	resp.SetGeneral(true, http.StatusOK, "ok")
+	resp.SetData(artId)
 }
