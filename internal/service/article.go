@@ -11,6 +11,7 @@ import (
 type ArticleService interface {
 	Save(ctx context.Context, article domain.Article) (int64, error)
 	Publish(ctx context.Context, article domain.Article) (int64, error)
+	Withdraw(ctx context.Context, artId int64, id int64) error
 }
 
 type articleService struct {
@@ -20,6 +21,10 @@ type articleService struct {
 	authorRepo repository.ArticleAuthorRepository
 	readerRepo repository.ArticleReaderRepository
 	l          logger.Logger
+}
+
+func (a *articleService) Withdraw(ctx context.Context, artId int64, id int64) error {
+	return a.repo.SyncStatus(ctx, artId, id, domain.ArticleStatusPrivate)
 }
 
 func (a *articleService) PublishV1(ctx context.Context, art domain.Article) (int64, error) {
@@ -51,9 +56,10 @@ func (a *articleService) PublishV1(ctx context.Context, art domain.Article) (int
 
 }
 
-func (a *articleService) Publish(ctx context.Context, article domain.Article) (int64, error) {
+func (a *articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
+	art.Status = domain.ArticleStatusPublished
 	// 同步
-	return a.repo.Sync(ctx, article)
+	return a.repo.Sync(ctx, art)
 }
 
 func NewArticleServiceV1(authorRepo repository.ArticleAuthorRepository, readerRepo repository.ArticleReaderRepository, l logger.Logger) *articleService {
@@ -71,6 +77,7 @@ func NewArticleService(repo repository.ArticleRepository) ArticleService {
 }
 
 func (a *articleService) Save(ctx context.Context, art domain.Article) (int64, error) {
+	art.Status = domain.ArticleStatusUnPublished
 	// 借助帖子id，判断是新增还是更新
 	if art.Id > 0 {
 		err := a.repo.Update(ctx, art)

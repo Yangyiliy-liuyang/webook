@@ -26,6 +26,31 @@ func (a *ArticleHandler) RegisterRouter(server *gin.Engine) {
 	g := server.Group("/articles")
 	g.POST("/edit", a.Edit)
 	g.POST("/publish", a.Publish)
+	g.POST("/withdraw", a.Withdraw)
+}
+
+func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
+	type Req struct {
+		ID int64 `json:"id"`
+	}
+	var req Req
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
+		return
+	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	err := a.svc.Withdraw(ctx, req.ID, uc.Uid)
+	if err != nil {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+		a.l.Error("撤回文章数据失败", logger.Int64("uid", uc.Uid), logger.Error(err))
+		return
+	}
+	resp.SetGeneral(true, http.StatusOK, "")
+	resp.SetData(nil)
 }
 
 func (a *ArticleHandler) Publish(ctx *gin.Context) {
