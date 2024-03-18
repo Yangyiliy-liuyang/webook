@@ -25,6 +25,14 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     ports:
       - '6379:6379'
+  mongo:
+    image: 'bitnami/mongodb:latest'
+    restart: always
+    environment:
+      - MONGODB_ROOT_PASSWORD=root
+      - MONGODB_USERNAME=root
+    ports:
+      - '27017:27017'
   etcd:
     image: 'bitnami/etcd:latest'
     restart: always

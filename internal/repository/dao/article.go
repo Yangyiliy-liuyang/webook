@@ -29,7 +29,7 @@ func (g *GormArticleDAO) SyncStatus(ctx context.Context, artId int64, uid int64,
 		if res.Error != nil {
 			return res.Error
 		}
-		if res.RowsAffected != 1 {
+		if res.RowsAffected == 0 {
 			return errors.New("没有修改权限，更新失败")
 		}
 		return tx.Model(&ArticlePublish{}).Where("id = ? ", artId).Updates(map[string]interface{}{
@@ -143,12 +143,6 @@ func (g *GormArticleDAO) UpdateById(ctx context.Context, art Article) error {
 	return nil
 }
 
-func NewGormArticleDAO(db *gorm.DB) ArticleDAO {
-	return &GormArticleDAO{
-		db: db,
-	}
-}
-
 func (g *GormArticleDAO) Insert(ctx context.Context, art Article) (int64, error) {
 	now := time.Now().UnixMilli()
 	art.Ctime = now
@@ -157,15 +151,21 @@ func (g *GormArticleDAO) Insert(ctx context.Context, art Article) (int64, error)
 	return art.Id, err
 }
 
+func NewGormArticleDAO(db *gorm.DB) ArticleDAO {
+	return &GormArticleDAO{
+		db: db,
+	}
+}
+
 type Article struct {
-	Id      int64  `gorm:"primary_key autoIncrement"`
-	Title   string `gorm:"type=varchar(4096)"`
-	Content string `gorm:"type:BLOB"`
+	Id      int64  `gorm:"primary_key autoIncrement" bson:"id,omitempty"`
+	Title   string `gorm:"type=varchar(4096)" bson:"title,omitempty"`
+	Content string `gorm:"type:BLOB" bson:"content,omitempty"`
 	// 索引
-	AuthorId int64 `gorm:"index"`
-	Status   uint8
-	Ctime    int64
-	Utime    int64
+	AuthorId int64 `gorm:"index" bson:"author_id,omitempty"`
+	Status   uint8 ` bson:"status,omitempty"`
+	Ctime    int64 `bson:"ctime,omitempty"`
+	Utime    int64 `bson:"utime,omitempty"`
 }
 
 // ArticlePublish 线上库表
