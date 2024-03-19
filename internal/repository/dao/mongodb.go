@@ -70,12 +70,14 @@ func (m *MongoDBDAO) Sync(ctx context.Context, art Article) (int64, error) {
 		return id, err
 	}
 	art.Id = id
+
+	// UPDATE livecol 更新或插入
 	filter := bson.D{bson.E{Key: "id", Value: art.Id},
 		bson.E{Key: "author_id", Value: art.AuthorId}}
 	now := time.Now().UnixMilli()
 	art.Utime = now
 	_, err = m.liveCol.UpdateOne(ctx, filter,
-		bson.D{bson.E{Key: "$set", Value: art},
+		bson.D{bson.E{Key: "$set", Value: ArticlePublish(art)},
 			bson.E{Key: "$setOnInsert",
 				Value: bson.D{bson.E{Key: "ctime", Value: now}}}},
 		options.Update().SetUpsert(true))
@@ -94,5 +96,6 @@ func (m *MongoDBDAO) SyncStatus(ctx context.Context, author, id int64, status ui
 	if res.ModifiedCount != 1 {
 		return errors.New("没有修改权限，更新失败")
 	}
-	return nil
+	_, err = m.liveCol.UpdateOne(ctx, filter, sets)
+	return err
 }
