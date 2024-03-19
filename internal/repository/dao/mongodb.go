@@ -14,6 +14,7 @@ type MongoDBDAO struct {
 	col     *mongo.Collection
 	liveCol *mongo.Collection
 	node    *snowflake.Node
+	ArticleDAO
 }
 
 func NewMongoDBArticleDAO(db *mongo.Database, node *snowflake.Node) ArticleDAO {
@@ -84,8 +85,8 @@ func (m *MongoDBDAO) Sync(ctx context.Context, art Article) (int64, error) {
 	return id, err
 }
 
-func (m *MongoDBDAO) SyncStatus(ctx context.Context, author, id int64, status uint8) error {
-	filter := bson.D{bson.E{Key: "id", Value: id},
+func (m *MongoDBDAO) SyncStatus(ctx context.Context, author, uid int64, status uint8) error {
+	filter := bson.D{bson.E{Key: "id", Value: uid},
 		bson.E{Key: "author_id", Value: author}}
 	sets := bson.D{bson.E{Key: "$set",
 		Value: bson.D{bson.E{Key: "status", Value: status}}}}

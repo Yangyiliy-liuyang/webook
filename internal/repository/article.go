@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/ecodeclub/ekit/slice"
 	"gorm.io/gorm"
 	"webook/internal/domain"
 	"webook/internal/repository/dao"
@@ -11,7 +12,18 @@ type ArticleRepository interface {
 	Create(ctx context.Context, art domain.Article) (int64, error)
 	Update(ctx context.Context, art domain.Article) error
 	Sync(ctx context.Context, art domain.Article) (int64, error)
-	SyncStatus(ctx context.Context, artId int64, id int64, status domain.ArticleStatus) error
+	SyncStatus(ctx context.Context, artId int64, uid int64, status domain.ArticleStatus) error
+	GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]domain.Article, error)
+}
+
+func (c *CacheArticleRepository) GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]domain.Article, error) {
+	artsDAO, err := c.dao.GetByAuthor(ctx, limit, offset, uid)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map[dao.Article, domain.Article](artsDAO, func(idx int, src dao.Article) domain.Article {
+		return c.toDomain(src)
+	}), nil
 }
 
 type CacheArticleRepository struct {
@@ -32,8 +44,8 @@ func NewCacheArticleRepositoryV2(authorDAO dao.ArticleAuthorDAO, readerDAO dao.A
 	}
 }
 
-func (c *CacheArticleRepository) SyncStatus(ctx context.Context, artId int64, id int64, status domain.ArticleStatus) error {
-	return c.dao.SyncStatus(ctx, artId, id, status.ToUint8())
+func (c *CacheArticleRepository) SyncStatus(ctx context.Context, artId int64, uid int64, status domain.ArticleStatus) error {
+	return c.dao.SyncStatus(ctx, artId, uid, status.ToUint8())
 }
 
 func NewCacheArticleRepository(dao dao.ArticleDAO) ArticleRepository {
@@ -116,5 +128,20 @@ func (c *CacheArticleRepository) toEntity(art domain.Article) dao.Article {
 		//Status:   uint8(art.Status),
 		// 连调写法
 		Status: art.Status.ToUint8(),
+	}
+}
+
+func (c *CacheArticleRepository) toDomain(art dao.Article) domain.Article {
+	return domain.Article{
+		Id:      art.Id,
+		Title:   art.Title,
+		Content: art.Content,
+		Author: domain.Author{
+			Id:   art.AuthorId,
+			Name: art.AuthorName,
+		},
+		Status: domain.ArticleStatus(art.Status),
+		Ctime:  art.Ctime,
+		Utime:  art.Utime,
 	}
 }

@@ -12,6 +12,18 @@ type GormArticleDAO struct {
 	db *gorm.DB
 }
 
+// GetByAuthor 根据作者ID获取文章列表
+func (g *GormArticleDAO) GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]Article, error) {
+	var arts []Article
+	err := g.db.WithContext(ctx).Model(&Article{}).Where("author_id = ?", uid).
+		Limit(limit).Offset(offset).Order("utime desc").
+		Find(&arts).Error
+	if err != nil {
+		return nil, err
+	}
+	return arts, nil
+}
+
 func (g *GormArticleDAO) SyncStatus(ctx context.Context, artId int64, uid int64, status uint8) error {
 	now := time.Now().UnixMilli()
 	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -155,10 +167,11 @@ type Article struct {
 	Title   string `gorm:"type=varchar(4096)" bson:"title,omitempty"`
 	Content string `gorm:"type:BLOB" bson:"content,omitempty"`
 	// 索引
-	AuthorId int64 `gorm:"index" bson:"author_id,omitempty"`
-	Status   uint8 ` bson:"status,omitempty"`
-	Ctime    int64 `bson:"ctime,omitempty"`
-	Utime    int64 `bson:"utime,omitempty"`
+	AuthorId   int64  `gorm:"index" bson:"author_id,omitempty"`
+	AuthorName string `gorm:"author_name" bson:"author_name,omitempty"`
+	Status     uint8  ` bson:"status,omitempty"`
+	Ctime      int64  `bson:"ctime,omitempty"`
+	Utime      int64  `bson:"utime,omitempty"`
 }
 
 // ArticlePublish 线上库表

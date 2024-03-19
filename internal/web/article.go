@@ -1,8 +1,10 @@
 package web
 
 import (
+	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 	"webook/internal/domain"
 	"webook/internal/domain/proctocol"
 	"webook/internal/service"
@@ -27,6 +29,10 @@ func (a *ArticleHandler) RegisterRouter(server *gin.Engine) {
 	g.POST("/edit", a.Edit)
 	g.POST("/publish", a.Publish)
 	g.POST("/withdraw", a.Withdraw)
+
+	// 创作者接口
+	g.POST("/list", a.List)
+	g.GET("/detail:id", a.Detail)
 }
 
 func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
@@ -117,4 +123,74 @@ func (a *ArticleHandler) Edit(ctx *gin.Context) {
 	}
 	resp.SetGeneral(true, http.StatusOK, "ok")
 	resp.SetData(artId)
+}
+
+func (a *ArticleHandler) List(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
+	type Req struct {
+		Limit  int `json:"limit"`
+		Offset int `bson:"offset"`
+	}
+	type article struct {
+		Id         int64  `json:"id"`
+		Title      string `json:"title"`
+		Content    string `json:"content"`
+		Status     uint8  `json:"status"`
+		AuthorId   int64  `json:"author_id"`
+		AuthorName string `json:"author_name"`
+		Ctime      string `json:"ctime"`
+		Utime      string `json:"utime"`
+	}
+	var req Req
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
+		return
+	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	arts, err := a.svc.GetByAuthor(ctx, req.Limit, req.Offset, uc.Uid)
+	if err != nil {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+		a.l.Error("获取文章列表数据失败", logger.Int("offset", req.Offset),
+			logger.Int("limit", req.Limit),
+			logger.Int64("uid", uc.Uid), logger.Error(err))
+		return
+	}
+	data := slice.Map[domain.Article, article](arts, func(idx int, src domain.Article) article {
+		return article{
+			Id:      src.Id,
+			Title:   src.Title,
+			Content: src.Content,
+			Status:  src.Status.ToUint8(),
+			// 不需要Author作者信息
+			//Ctime: src.Ctime,
+			//Utime: src.Utime,
+			Ctime: src.Ctime.AsTime().Format(time.DateTime),
+			Utime: src.Utime.AsTime().Format(time.DateTime),
+		}
+	})
+	resp.SetGeneral(true, http.StatusOK, "ok")
+	resp.SetData(data)
+}
+
+func (a *ArticleHandler) Detail(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
+	artId := ctx.Param("id")
+	if artId == "" {
+		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
+		return
+	}
+	art, err := a.svc.GetByArtId(ctx, artId)
+	if err != nil {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+		a.l.Error("获取文章详情数据失败", logger.Int64("id", art.Id), logger.Error(err))
+		return
+	}
+	resp.SetGeneral(true, http.StatusOK, "ok")
+	resp.SetData(art)
 }
