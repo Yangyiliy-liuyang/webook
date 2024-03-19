@@ -8,13 +8,6 @@ import (
 	"time"
 )
 
-type ArticleDAO interface {
-	Insert(ctx context.Context, art Article) (int64, error)
-	UpdateById(ctx context.Context, art Article) error
-	Sync(ctx context.Context, art Article) (int64, error)
-	SyncStatus(ctx context.Context, artId int64, id int64, status uint8) error
-}
-
 type GormArticleDAO struct {
 	db *gorm.DB
 }
