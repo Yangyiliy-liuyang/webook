@@ -13,3 +13,10 @@ func Int64(key string, val int64) Field {
 		val,
 	}
 }
+
+func Int(key string, val int) Field {
+	return Field{
+		key,
+		val,
+	}
+}

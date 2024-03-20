@@ -2,9 +2,12 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/ecodeclub/ekit/slice"
 	"gorm.io/gorm"
+	"time"
 	"webook/internal/domain"
+	"webook/internal/repository/cache"
 	"webook/internal/repository/dao"
 )
 
@@ -14,21 +17,66 @@ type ArticleRepository interface {
 	Sync(ctx context.Context, art domain.Article) (int64, error)
 	SyncStatus(ctx context.Context, artId int64, uid int64, status domain.ArticleStatus) error
 	GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]domain.Article, error)
+	GetByArtId(ctx context.Context, artId int64) (domain.Article, error)
+}
+
+func (c CacheArticleRepository) GetByArtId(ctx context.Context, artId int64) (domain.Article, error) {
+	res, err := c.cache.Get(ctx, artId)
+	if err == nil {
+		return res, err
+	}
+	art, err := c.dao.GetByArtId(ctx, artId)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	go func() {
+		err := c.cache.Set(ctx, c.toDomain(art))
+		if err != nil {
+			// 记录日志 监控
+			fmt.Println("缓存回写失败", err)
+		}
+	}()
+	return c.toDomain(art), nil
 }
 
 func (c *CacheArticleRepository) GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]domain.Article, error) {
-	artsDAO, err := c.dao.GetByAuthor(ctx, limit, offset, uid)
+	if limit == 100 && offset == 0 {
+		res, err := c.cache.GetFirstPage(ctx, uid)
+		if res == nil {
+			return res, nil
+		} else {
+			// 缓存未命中，记录日志
+			return res, err
+		}
+	}
+	arts, err := c.dao.GetByAuthor(ctx, limit, offset, uid)
 	if err != nil {
 		return nil, err
 	}
-	return slice.Map[dao.Article, domain.Article](artsDAO, func(idx int, src dao.Article) domain.Article {
+	res := slice.Map[dao.Article, domain.Article](arts, func(idx int, src dao.Article) domain.Article {
 		return c.toDomain(src)
-	}), nil
+	})
+	go func() {
+		ctx, cancel := context.WithTimeout(ctx, time.Second)
+		defer cancel()
+		// 缓存回写失败，有可能是大问题 网络问题连不上redis 或者第三方redis问题
+		err := c.cache.SetFirstPage(ctx, uid, res)
+		if err != nil {
+			// 记录日志 监控
+			fmt.Println("缓存回写失败", err)
+		}
+	}()
+	go func() {
+		ctx, cancel := context.WithTimeout(ctx, time.Second)
+		defer cancel()
+		c.preCache(ctx, res)
+	}()
+	return res, nil
 }
 
 type CacheArticleRepository struct {
-	dao dao.ArticleDAO
-
+	dao   dao.ArticleDAO
+	cache cache.ArticleCache
 	// repository层 V2分发 SyncV1专用
 	authorDAO dao.ArticleAuthorDAO
 	readerDAO dao.ArticleReaderDAO
@@ -45,17 +93,35 @@ func NewCacheArticleRepositoryV2(authorDAO dao.ArticleAuthorDAO, readerDAO dao.A
 }
 
 func (c *CacheArticleRepository) SyncStatus(ctx context.Context, artId int64, uid int64, status domain.ArticleStatus) error {
-	return c.dao.SyncStatus(ctx, artId, uid, status.ToUint8())
+	err := c.dao.SyncStatus(ctx, artId, uid, status.ToUint8())
+	if err != nil {
+		return err
+	}
+	err = c.cache.DelFirstPage(ctx, uid)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func NewCacheArticleRepository(dao dao.ArticleDAO) ArticleRepository {
+func NewCacheArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache) ArticleRepository {
 	return &CacheArticleRepository{
-		dao: dao,
+		dao:   dao,
+		cache: cache,
 	}
 }
 
 func (c *CacheArticleRepository) Sync(ctx context.Context, art domain.Article) (int64, error) {
-	return c.dao.Sync(ctx, c.toEntity(art))
+	artId, err := c.dao.Sync(ctx, c.toEntity(art))
+	if err != nil {
+		return 0, err
+	}
+	err = c.cache.DelFirstPage(ctx, artId)
+	if err != nil {
+		return 0, err
+	}
+	return artId, nil
+
 }
 
 // SyncV2 事务开启
@@ -111,12 +177,27 @@ func (c *CacheArticleRepository) SyncV1(ctx context.Context, art domain.Article)
 }
 
 func (c *CacheArticleRepository) Update(ctx context.Context, art domain.Article) error {
-	// 更新缓存
-	return c.dao.UpdateById(ctx, c.toEntity(art))
+	err := c.dao.UpdateById(ctx, c.toEntity(art))
+	if err != nil {
+		return err
+	}
+	err = c.cache.DelFirstPage(ctx, art.Id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *CacheArticleRepository) Create(ctx context.Context, art domain.Article) (int64, error) {
-	return c.dao.Insert(ctx, c.toEntity(art))
+	artId, err := c.dao.Insert(ctx, c.toEntity(art))
+	if err != nil {
+		return 0, err
+	}
+	err = c.cache.DelFirstPage(ctx, artId)
+	if err != nil {
+		return 0, err
+	}
+	return artId, nil
 }
 
 func (c *CacheArticleRepository) toEntity(art domain.Article) dao.Article {
@@ -143,5 +224,17 @@ func (c *CacheArticleRepository) toDomain(art dao.Article) domain.Article {
 		Status: domain.ArticleStatus(art.Status),
 		Ctime:  art.Ctime,
 		Utime:  art.Utime,
+	}
+}
+
+func (c *CacheArticleRepository) preCache(ctx context.Context, arts []domain.Article) {
+	// 缓存回写
+	const size = 1024 * 1024
+	if len(arts) > 0 && len(arts[0].Content) < size {
+		err := c.cache.Set(ctx, arts[0])
+		if err != nil {
+			// 记录日志 监控
+			fmt.Println("缓存回写失败", err)
+		}
 	}
 }

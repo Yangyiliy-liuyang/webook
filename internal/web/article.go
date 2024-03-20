@@ -4,7 +4,7 @@ import (
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"time"
+	"strconv"
 	"webook/internal/domain"
 	"webook/internal/domain/proctocol"
 	"webook/internal/service"
@@ -141,9 +141,10 @@ func (a *ArticleHandler) List(ctx *gin.Context) {
 		Status     uint8  `json:"status"`
 		AuthorId   int64  `json:"author_id"`
 		AuthorName string `json:"author_name"`
-		Ctime      string `json:"ctime"`
-		Utime      string `json:"utime"`
+		Ctime      int64  `json:"ctime"`
+		Utime      int64  `json:"utime"`
 	}
+	var data []article
 	var req Req
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
@@ -158,7 +159,7 @@ func (a *ArticleHandler) List(ctx *gin.Context) {
 			logger.Int64("uid", uc.Uid), logger.Error(err))
 		return
 	}
-	data := slice.Map[domain.Article, article](arts, func(idx int, src domain.Article) article {
+	data = slice.Map[domain.Article, article](arts, func(idx int, src domain.Article) article {
 		return article{
 			Id:      src.Id,
 			Title:   src.Title,
@@ -167,8 +168,8 @@ func (a *ArticleHandler) List(ctx *gin.Context) {
 			// 不需要Author作者信息
 			//Ctime: src.Ctime,
 			//Utime: src.Utime,
-			Ctime: src.Ctime.AsTime().Format(time.DateTime),
-			Utime: src.Utime.AsTime().Format(time.DateTime),
+			Ctime: src.Ctime,
+			Utime: src.Utime,
 		}
 	})
 	resp.SetGeneral(true, http.StatusOK, "ok")
@@ -180,17 +181,43 @@ func (a *ArticleHandler) Detail(ctx *gin.Context) {
 	defer func() {
 		ctx.JSON(http.StatusOK, resp)
 	}()
-	artId := ctx.Param("id")
-	if artId == "" {
+	type article struct {
+		Id         int64  `json:"id"`
+		Title      string `json:"title"`
+		Content    string `json:"content"`
+		Status     uint8  `json:"status"`
+		AuthorId   int64  `json:"author_id"`
+		AuthorName string `json:"author_name"`
+		Ctime      int64  `json:"ctime"`
+		Utime      int64  `json:"utime"`
+	}
+	var data article
+	str := ctx.Param("id")
+	artId, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
 		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
 		return
 	}
 	art, err := a.svc.GetByArtId(ctx, artId)
 	if err != nil {
 		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
-		a.l.Error("获取文章详情数据失败", logger.Int64("id", art.Id), logger.Error(err))
+		a.l.Error("获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
 		return
 	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	if art.Author.Id != uc.Uid {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+		a.l.Error("没有权限，获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
+		return
+	}
+	data = article{
+		Id:      art.Id,
+		Title:   art.Title,
+		Content: art.Content,
+		Status:  art.Status.ToUint8(),
+		Ctime:   art.Ctime,
+		Utime:   art.Utime,
+	}
 	resp.SetGeneral(true, http.StatusOK, "ok")
-	resp.SetData(art)
+	resp.SetData(data)
 }
