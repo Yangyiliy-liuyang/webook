@@ -64,6 +64,7 @@ func InitViperRemote() {
 		}
 	}()
 }
+
 func InitViperWatch() {
 	cfile := pflag.String("config", "config/dev.yaml", "config file path")
 	pflag.Parse()

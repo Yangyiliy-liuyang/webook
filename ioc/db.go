@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	glogger "gorm.io/gorm/logger"
 	"webook/internal/repository/dao"
 	"webook/pkg/logger"
 )
@@ -21,10 +20,10 @@ func InitDB(l logger.Logger) *gorm.DB {
 		panic(err)
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
-		Logger: glogger.New(gormLoggerFunc(l.Debug), glogger.Config{
-			SlowThreshold: 0,
-			LogLevel:      glogger.Info,
-		}), // 禁用日志
+		//Logger: glogger.New(gormLoggerFunc(l.Debug), glogger.Config{
+		//	SlowThreshold: 0,
+		//	LogLevel:      glogger.Info,
+		//}), // 禁用日志
 	})
 	if err != nil {
 		panic(err)

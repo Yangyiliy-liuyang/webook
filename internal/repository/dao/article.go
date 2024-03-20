@@ -10,6 +10,7 @@ import (
 
 type GormArticleDAO struct {
 	db *gorm.DB
+	ArticleDAO
 }
 
 // GetByAuthor 根据作者ID获取文章列表

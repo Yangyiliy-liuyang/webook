@@ -18,7 +18,7 @@ type ArticleCache interface {
 }
 
 type ArticleRedisCache struct {
-	cmd redis.Client
+	cmd redis.Cmdable
 }
 
 func (r *ArticleRedisCache) Set(ctx context.Context, article domain.Article) error {
@@ -73,4 +73,10 @@ func (r *ArticleRedisCache) SetFirstPage(ctx context.Context, uid int64, arts []
 
 func (r *ArticleRedisCache) firstKey(uid int64) string {
 	return fmt.Sprintf("article:first_page:%d", uid)
+}
+
+func NewArticleRedisCache(cmd redis.Cmdable) ArticleCache {
+	return &ArticleRedisCache{
+		cmd: cmd,
+	}
 }
