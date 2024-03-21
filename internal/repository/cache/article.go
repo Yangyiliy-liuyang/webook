@@ -11,33 +11,57 @@ import (
 
 type ArticleCache interface {
 	GetFirstPage(ctx context.Context, uid int64) ([]domain.Article, error)
-	SetFirstPage(ctx context.Context, uid int64, articles []domain.Article) error
+	SetFirstPage(ctx context.Context, uid int64, arts []domain.Article) error
 	DelFirstPage(ctx context.Context, uid int64) error
-	Get(ctx context.Context, uid int64) (domain.Article, error)
-	Set(ctx context.Context, article domain.Article) error
+	Get(ctx context.Context, artId int64) (domain.Article, error)
+	Set(ctx context.Context, art domain.Article) error
+	GetPub(ctx context.Context, artId int64) (domain.Article, error)
+	SetPub(ctx context.Context, art domain.Article) error
 }
 
 type ArticleRedisCache struct {
 	cmd redis.Cmdable
 }
 
-func (r *ArticleRedisCache) Set(ctx context.Context, article domain.Article) error {
-	//TODO implement me
-	panic("implement me")
+func (r *ArticleRedisCache) GetPub(ctx context.Context, artId int64) (domain.Article, error) {
+	val, err := r.cmd.Get(ctx, r.pubKey(artId)).Bytes()
+	if err != nil {
+		return domain.Article{}, err
+	}
+	var art domain.Article
+	err = json.Unmarshal(val, &art)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	return art, nil
 }
 
-func (r *ArticleRedisCache) Get(ctx context.Context, uid int64) (domain.Article, error) {
-	//TODO implement me
-	panic("implement me")
+func (r *ArticleRedisCache) SetPub(ctx context.Context, art domain.Article) error {
+	err := r.cmd.Set(ctx, r.pubKey(art.Id), art, time.Minute*10).Err()
+	return err
+}
+
+func (r *ArticleRedisCache) Get(ctx context.Context, artId int64) (domain.Article, error) {
+	val, err := r.cmd.Get(ctx, r.key(artId)).Bytes()
+	if err != nil {
+		return domain.Article{}, err
+	}
+	var art domain.Article
+	err = json.Unmarshal(val, &art)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	return art, nil
+}
+
+func (r *ArticleRedisCache) Set(ctx context.Context, art domain.Article) error {
+	err := r.cmd.Set(ctx, r.key(art.Id), art, time.Minute*10).Err()
+	return err
 }
 
 func (r *ArticleRedisCache) DelFirstPage(ctx context.Context, uid int64) error {
 	key := r.firstKey(uid)
-	err := r.cmd.Del(ctx, key).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.cmd.Del(ctx, key).Err()
 }
 
 func (r *ArticleRedisCache) GetFirstPage(ctx context.Context, uid int64) ([]domain.Article, error) {
@@ -69,6 +93,14 @@ func (r *ArticleRedisCache) SetFirstPage(ctx context.Context, uid int64, arts []
 		return err
 	}
 	return nil
+}
+
+func (r *ArticleRedisCache) pubKey(artId int64) string {
+	return fmt.Sprintf("article:pub:detail:%d", artId)
+}
+
+func (r *ArticleRedisCache) key(artId int64) string {
+	return fmt.Sprintf("article:detail:%d", artId)
 }
 
 func (r *ArticleRedisCache) firstKey(uid int64) string {

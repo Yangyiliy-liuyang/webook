@@ -33,6 +33,10 @@ func (a *ArticleHandler) RegisterRouter(server *gin.Engine) {
 	// 创作者接口
 	g.POST("/list", a.List)
 	g.GET("/detail:id", a.Detail)
+
+	// 读者接口
+	pub := g.Group("/pub")
+	pub.GET("/detail:id", a.PubDetail)
 }
 
 func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
@@ -217,6 +221,49 @@ func (a *ArticleHandler) Detail(ctx *gin.Context) {
 		Status:  art.Status.ToUint8(),
 		Ctime:   art.Ctime,
 		Utime:   art.Utime,
+	}
+	resp.SetGeneral(true, http.StatusOK, "ok")
+	resp.SetData(data)
+}
+
+func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer ctx.JSON(http.StatusOK, resp)
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
+	type article struct {
+		Id         int64  `json:"id"`
+		Title      string `json:"title"`
+		Content    string `json:"content"`
+		Status     uint8  `json:"status"`
+		AuthorId   int64  `json:"author_id"`
+		AuthorName string `json:"author_name"`
+		Ctime      int64  `json:"ctime"`
+		Utime      int64  `json:"utime"`
+	}
+	var data article
+	str := ctx.Param("id")
+	artId, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
+		return
+	}
+	art, err := a.svc.GetPubByArtId(ctx, artId)
+	if err != nil {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+		a.l.Error("获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
+		return
+	}
+	data = article{
+		Id:      art.Id,
+		Title:   art.Title,
+		Content: art.Content,
+		Status:  art.Status.ToUint8(),
+		// 需要
+		AuthorName: art.Author.Name,
+		Ctime:      art.Ctime,
+		Utime:      art.Utime,
 	}
 	resp.SetGeneral(true, http.StatusOK, "ok")
 	resp.SetData(data)

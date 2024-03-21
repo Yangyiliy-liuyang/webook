@@ -18,9 +18,51 @@ type ArticleRepository interface {
 	SyncStatus(ctx context.Context, artId int64, uid int64, status domain.ArticleStatus) error
 	GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]domain.Article, error)
 	GetByArtId(ctx context.Context, artId int64) (domain.Article, error)
+
+	GetPubByArtId(ctx context.Context, artId int64) (domain.Article, error)
 }
 
-func (c CacheArticleRepository) GetByArtId(ctx context.Context, artId int64) (domain.Article, error) {
+func (c *CacheArticleRepository) GetPubByArtId(ctx context.Context, artId int64) (domain.Article, error) {
+	val, err := c.cache.GetPub(ctx, artId)
+	if err == nil {
+		return val, nil
+	}
+	// 线上库
+	res, err := c.dao.GetPubByArtId(ctx, artId)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	// 转换
+	art := c.toDomain(dao.Article{
+		Id:       res.Id,
+		Title:    res.Title,
+		Content:  res.Content,
+		AuthorId: res.AuthorId,
+		Status:   res.Status,
+		Ctime:    res.Ctime,
+		Utime:    res.Utime,
+	})
+	// 延迟加载 创作者信息
+	uid, err := c.userRepo.FindById(ctx, art.Author.Id)
+	if err != nil {
+		// 没有获取到创作者名字，但是上一步数据获取到了
+		return art, err
+		//return domain.Article{}, err  这种数据被抛弃了，需要记录日志
+	}
+	art.Author.Name = uid.Nickname
+	go func() {
+		ctx, cancel := context.WithTimeout(ctx, time.Second)
+		defer cancel()
+		err := c.cache.SetPub(ctx, art)
+		if err != nil {
+			// 记录日志 监控
+			fmt.Println("缓存回写失败", err)
+		}
+	}()
+	return art, nil
+}
+
+func (c *CacheArticleRepository) GetByArtId(ctx context.Context, artId int64) (domain.Article, error) {
 	res, err := c.cache.Get(ctx, artId)
 	if err == nil {
 		return res, err
@@ -75,8 +117,9 @@ func (c *CacheArticleRepository) GetByAuthor(ctx context.Context, limit, offset 
 }
 
 type CacheArticleRepository struct {
-	dao   dao.ArticleDAO
-	cache cache.ArticleCache
+	dao      dao.ArticleDAO
+	cache    cache.ArticleCache
+	userRepo CacheUserRepository
 	// repository层 V2分发 SyncV1专用
 	authorDAO dao.ArticleAuthorDAO
 	readerDAO dao.ArticleReaderDAO
@@ -120,8 +163,25 @@ func (c *CacheArticleRepository) Sync(ctx context.Context, art domain.Article) (
 	if err != nil {
 		return 0, err
 	}
+	go func() {
+		// 可以设置成灵活的过期时间
+		ctx, cancel := context.WithTimeout(ctx, time.Second)
+		defer cancel()
+		user, err := c.userRepo.FindById(ctx, art.Author.Id)
+		if err != nil {
+			return
+		}
+		art.Author = domain.Author{
+			Id:   user.Id,
+			Name: user.Nickname,
+		}
+		err = c.cache.SetPub(ctx, art)
+		if err != nil {
+			// 记录日志 监控
+			fmt.Println("缓存回写失败", err)
+		}
+	}()
 	return artId, nil
-
 }
 
 // SyncV2 事务开启
@@ -218,8 +278,7 @@ func (c *CacheArticleRepository) toDomain(art dao.Article) domain.Article {
 		Title:   art.Title,
 		Content: art.Content,
 		Author: domain.Author{
-			Id:   art.AuthorId,
-			Name: art.AuthorName,
+			Id: art.AuthorId,
 		},
 		Status: domain.ArticleStatus(art.Status),
 		Ctime:  art.Ctime,

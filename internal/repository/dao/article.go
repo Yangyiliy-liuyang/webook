@@ -13,6 +13,18 @@ type GormArticleDAO struct {
 	ArticleDAO
 }
 
+// GetPubByArtId 根据文章ID获取线上库文章
+func (g *GormArticleDAO) GetPubByArtId(ctx context.Context, artId int64) (ArticlePublish, error) {
+	var art ArticlePublish
+	err := g.db.WithContext(ctx).Model(&ArticlePublish{}).
+		Where("id = ? and status = ?", artId, 1).
+		First(&art).Error
+	if err != nil {
+		return art, err
+	}
+	return art, nil
+}
+
 // GetByAuthor 根据作者ID获取文章列表
 func (g *GormArticleDAO) GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]Article, error) {
 	var arts []Article
@@ -168,11 +180,10 @@ type Article struct {
 	Title   string `gorm:"type=varchar(4096)" bson:"title,omitempty"`
 	Content string `gorm:"type:BLOB" bson:"content,omitempty"`
 	// 索引
-	AuthorId   int64  `gorm:"index" bson:"author_id,omitempty"`
-	AuthorName string `gorm:"author_name" bson:"author_name,omitempty"`
-	Status     uint8  ` bson:"status,omitempty"`
-	Ctime      int64  `bson:"ctime,omitempty"`
-	Utime      int64  `bson:"utime,omitempty"`
+	AuthorId int64 `gorm:"index" bson:"author_id,omitempty"`
+	Status   uint8 ` bson:"status,omitempty"`
+	Ctime    int64 `bson:"ctime,omitempty"`
+	Utime    int64 `bson:"utime,omitempty"`
 }
 
 // ArticlePublish 线上库表
