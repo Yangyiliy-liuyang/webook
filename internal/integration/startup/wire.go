@@ -27,7 +27,7 @@ func InitWebServer() *gin.Engine {
 		//cache
 		cache.NewRedisUserCache, cache.NewRedisCodeCache,
 		//repository
-		repository.NewCacheUserRepository, repository.NewCodeRepository, repository.NewCacheArticleRepository,
+		repository.NewCacheUserRepository, repository.NewCodeRepository, repository.NewCachedArticleRepository,
 		//service
 		ioc.InitSMSService, InitWechatService,
 		service.NewUserService, service.NewCodeService, service.NewArticleService,
@@ -41,7 +41,7 @@ func InitWebServer() *gin.Engine {
 func InitArticleHandler(articleDAO dao.ArticleDAO) *web.ArticleHandler {
 	wire.Build(
 		thirdPartySet,
-		repository.NewCacheArticleRepository,
+		repository.NewCachedArticleRepository,
 		service.NewArticleService,
 		web.NewArticleHandler,
 	)

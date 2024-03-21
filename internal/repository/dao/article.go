@@ -86,6 +86,7 @@ func (g *GormArticleDAO) Sync(ctx context.Context, art Article) (int64, error) {
 			}
 		*/
 
+		// todo
 		err = tx.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}}, // 冲突的列
 			DoNothing: false,

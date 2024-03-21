@@ -13,14 +13,16 @@ import (
 )
 
 type ArticleHandler struct {
-	svc service.ArticleService
-	l   logger.Logger
+	svc     service.ArticleService
+	intrSvc service.InteractiveService
+	l       logger.Logger
 }
 
-func NewArticleHandler(svc service.ArticleService, l logger.Logger) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, l logger.Logger, intrSvc service.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
-		svc: svc,
-		l:   l,
+		svc:     svc,
+		l:       l,
+		intrSvc: intrSvc,
 	}
 }
 
@@ -255,6 +257,7 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		a.l.Error("获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
 		return
 	}
+	a.intrSvc.IncrReadCnt(ctx, "", art.Id)
 	data = article{
 		Id:      art.Id,
 		Title:   art.Title,

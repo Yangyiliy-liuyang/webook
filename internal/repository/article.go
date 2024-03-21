@@ -22,7 +22,7 @@ type ArticleRepository interface {
 	GetPubByArtId(ctx context.Context, artId int64) (domain.Article, error)
 }
 
-func (c *CacheArticleRepository) GetPubByArtId(ctx context.Context, artId int64) (domain.Article, error) {
+func (c *CachedArticleRepository) GetPubByArtId(ctx context.Context, artId int64) (domain.Article, error) {
 	val, err := c.cache.GetPub(ctx, artId)
 	if err == nil {
 		return val, nil
@@ -62,7 +62,7 @@ func (c *CacheArticleRepository) GetPubByArtId(ctx context.Context, artId int64)
 	return art, nil
 }
 
-func (c *CacheArticleRepository) GetByArtId(ctx context.Context, artId int64) (domain.Article, error) {
+func (c *CachedArticleRepository) GetByArtId(ctx context.Context, artId int64) (domain.Article, error) {
 	res, err := c.cache.Get(ctx, artId)
 	if err == nil {
 		return res, err
@@ -81,7 +81,7 @@ func (c *CacheArticleRepository) GetByArtId(ctx context.Context, artId int64) (d
 	return c.toDomain(art), nil
 }
 
-func (c *CacheArticleRepository) GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]domain.Article, error) {
+func (c *CachedArticleRepository) GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]domain.Article, error) {
 	if limit == 100 && offset == 0 {
 		res, err := c.cache.GetFirstPage(ctx, uid)
 		if res == nil {
@@ -116,7 +116,7 @@ func (c *CacheArticleRepository) GetByAuthor(ctx context.Context, limit, offset 
 	return res, nil
 }
 
-type CacheArticleRepository struct {
+type CachedArticleRepository struct {
 	dao      dao.ArticleDAO
 	cache    cache.ArticleCache
 	userRepo CacheUserRepository
@@ -128,14 +128,14 @@ type CacheArticleRepository struct {
 	db *gorm.DB
 }
 
-func NewCacheArticleRepositoryV2(authorDAO dao.ArticleAuthorDAO, readerDAO dao.ArticleReaderDAO) *CacheArticleRepository {
-	return &CacheArticleRepository{
+func NewCachedArticleRepositoryV2(authorDAO dao.ArticleAuthorDAO, readerDAO dao.ArticleReaderDAO) *CachedArticleRepository {
+	return &CachedArticleRepository{
 		authorDAO: authorDAO,
 		readerDAO: readerDAO,
 	}
 }
 
-func (c *CacheArticleRepository) SyncStatus(ctx context.Context, artId int64, uid int64, status domain.ArticleStatus) error {
+func (c *CachedArticleRepository) SyncStatus(ctx context.Context, artId int64, uid int64, status domain.ArticleStatus) error {
 	err := c.dao.SyncStatus(ctx, artId, uid, status.ToUint8())
 	if err != nil {
 		return err
@@ -147,14 +147,14 @@ func (c *CacheArticleRepository) SyncStatus(ctx context.Context, artId int64, ui
 	return nil
 }
 
-func NewCacheArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache) ArticleRepository {
-	return &CacheArticleRepository{
+func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache) ArticleRepository {
+	return &CachedArticleRepository{
 		dao:   dao,
 		cache: cache,
 	}
 }
 
-func (c *CacheArticleRepository) Sync(ctx context.Context, art domain.Article) (int64, error) {
+func (c *CachedArticleRepository) Sync(ctx context.Context, art domain.Article) (int64, error) {
 	artId, err := c.dao.Sync(ctx, c.toEntity(art))
 	if err != nil {
 		return 0, err
@@ -185,7 +185,7 @@ func (c *CacheArticleRepository) Sync(ctx context.Context, art domain.Article) (
 }
 
 // SyncV2 事务开启
-func (c *CacheArticleRepository) SyncV2(ctx context.Context, art domain.Article) (int64, error) {
+func (c *CachedArticleRepository) SyncV2(ctx context.Context, art domain.Article) (int64, error) {
 	tx := c.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return 0, tx.Error
@@ -215,7 +215,7 @@ func (c *CacheArticleRepository) SyncV2(ctx context.Context, art domain.Article)
 	return artId, nil
 }
 
-func (c *CacheArticleRepository) SyncV1(ctx context.Context, art domain.Article) (int64, error) {
+func (c *CachedArticleRepository) SyncV1(ctx context.Context, art domain.Article) (int64, error) {
 	artn := c.toEntity(art)
 	var artId int64
 	var err error
@@ -236,7 +236,7 @@ func (c *CacheArticleRepository) SyncV1(ctx context.Context, art domain.Article)
 	return artId, nil
 }
 
-func (c *CacheArticleRepository) Update(ctx context.Context, art domain.Article) error {
+func (c *CachedArticleRepository) Update(ctx context.Context, art domain.Article) error {
 	err := c.dao.UpdateById(ctx, c.toEntity(art))
 	if err != nil {
 		return err
@@ -248,7 +248,7 @@ func (c *CacheArticleRepository) Update(ctx context.Context, art domain.Article)
 	return nil
 }
 
-func (c *CacheArticleRepository) Create(ctx context.Context, art domain.Article) (int64, error) {
+func (c *CachedArticleRepository) Create(ctx context.Context, art domain.Article) (int64, error) {
 	artId, err := c.dao.Insert(ctx, c.toEntity(art))
 	if err != nil {
 		return 0, err
@@ -260,7 +260,7 @@ func (c *CacheArticleRepository) Create(ctx context.Context, art domain.Article)
 	return artId, nil
 }
 
-func (c *CacheArticleRepository) toEntity(art domain.Article) dao.Article {
+func (c *CachedArticleRepository) toEntity(art domain.Article) dao.Article {
 	return dao.Article{
 		Id:       art.Id,
 		Title:    art.Title,
@@ -272,7 +272,7 @@ func (c *CacheArticleRepository) toEntity(art domain.Article) dao.Article {
 	}
 }
 
-func (c *CacheArticleRepository) toDomain(art dao.Article) domain.Article {
+func (c *CachedArticleRepository) toDomain(art dao.Article) domain.Article {
 	return domain.Article{
 		Id:      art.Id,
 		Title:   art.Title,
@@ -286,7 +286,7 @@ func (c *CacheArticleRepository) toDomain(art dao.Article) domain.Article {
 	}
 }
 
-func (c *CacheArticleRepository) preCache(ctx context.Context, arts []domain.Article) {
+func (c *CachedArticleRepository) preCache(ctx context.Context, arts []domain.Article) {
 	// 缓存回写
 	const size = 1024 * 1024
 	if len(arts) > 0 && len(arts[0].Content) < size {

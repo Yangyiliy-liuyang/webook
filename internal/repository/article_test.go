@@ -4,6 +4,6 @@ import (
 	"testing"
 )
 
-func TestCacheArticleRepository_SyncV1(t *testing.T) {
+func TestCachedArticleRepository_SyncV1(t *testing.T) {
 
 }
