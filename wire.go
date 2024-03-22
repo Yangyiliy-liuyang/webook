@@ -14,6 +14,13 @@ import (
 	"webook/ioc"
 )
 
+var interactiveSvcSet = wire.NewSet(
+	dao.NewGormInteractiveDAO,
+	cache.NewInteractiveCache,
+	repository.NewCachedInteractiveRepository,
+	service.NewInteractiveService,
+)
+
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		//第三方依赖
@@ -31,6 +38,7 @@ func InitWebServer() *gin.Engine {
 		jwt.NewRedisJWTHandler,
 		web.NewUserHandler, web.NewOAuth2WechatHandler, web.NewArticleHandler,
 		ioc.InitGinMiddleware, ioc.InitWebService,
+		interactiveSvcSet,
 	)
 	return gin.Default()
 }

@@ -1,10 +1,12 @@
 package web
 
 import (
+	"context"
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+	"time"
 	"webook/internal/domain"
 	"webook/internal/domain/proctocol"
 	"webook/internal/service"
@@ -16,6 +18,7 @@ type ArticleHandler struct {
 	svc     service.ArticleService
 	intrSvc service.InteractiveService
 	l       logger.Logger
+	biz     string
 }
 
 func NewArticleHandler(svc service.ArticleService, l logger.Logger, intrSvc service.InteractiveService) *ArticleHandler {
@@ -23,6 +26,7 @@ func NewArticleHandler(svc service.ArticleService, l logger.Logger, intrSvc serv
 		svc:     svc,
 		l:       l,
 		intrSvc: intrSvc,
+		biz:     "article",
 	}
 }
 
@@ -257,7 +261,14 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		a.l.Error("获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
 		return
 	}
-	a.intrSvc.IncrReadCnt(ctx, "", art.Id)
+	go func() {
+		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+		err = a.intrSvc.IncrReadCnt(ctx, a.biz, art.Id)
+		if err != nil {
+			a.l.Error("文章阅读量增加失败", logger.Int64("id", art.Id), logger.Error(err))
+		}
+	}()
 	data = article{
 		Id:      art.Id,
 		Title:   art.Title,

@@ -16,3 +16,9 @@ type interactiveService struct {
 func (i *interactiveService) IncrReadCnt(ctx context.Context, biz string, bizId int64) error {
 	return i.repo.IncrReadCnt(ctx, biz, bizId)
 }
+
+func NewInteractiveService(repo repository.InteractiveRepository) InteractiveService {
+	return &interactiveService{
+		repo: repo,
+	}
+}

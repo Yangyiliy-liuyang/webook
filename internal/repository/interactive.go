@@ -22,3 +22,10 @@ func (c *CachedInteractiveRepository) IncrReadCnt(ctx context.Context, biz strin
 	}
 	return c.cache.IncrReadCntIfPresent(ctx, biz, bizId)
 }
+
+func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache) InteractiveRepository {
+	return &CachedInteractiveRepository{
+		dao:   dao,
+		cache: cache,
+	}
+}

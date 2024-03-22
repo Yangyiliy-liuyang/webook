@@ -36,6 +36,12 @@ func (g *GormInteractiveDAO) IncrReadCnt(ctx context.Context, biz string, bizId 
 	}).Error
 }
 
+func NewGormInteractiveDAO(db *gorm.DB) InteractiveDAO {
+	return &GormInteractiveDAO{
+		db: db,
+	}
+}
+
 type Interactive struct {
 	Id int64 `gorm:"primaryKey,autoIncrement"`
 	// 唯一索引 <bizId,biz>
