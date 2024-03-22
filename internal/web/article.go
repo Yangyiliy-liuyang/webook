@@ -43,6 +43,7 @@ func (a *ArticleHandler) RegisterRouter(server *gin.Engine) {
 	// 读者接口
 	pub := g.Group("/pub")
 	pub.GET("/detail:id", a.PubDetail)
+	pub.GET("/like", a.Like)
 }
 
 func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
@@ -281,4 +282,35 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 	}
 	resp.SetGeneral(true, http.StatusOK, "ok")
 	resp.SetData(data)
+}
+
+func (a *ArticleHandler) Like(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
+	type Req struct {
+		ArtId int64 `json:"art_id"`
+		Like  bool  `json:"like"`
+	}
+	var req Req
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
+		return
+	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	var err error
+	if req.Like {
+		err = a.intrSvc.Like(ctx, a.biz, req.ArtId, uc.Uid)
+	} else {
+		err = a.intrSvc.CancelLike(ctx, a.biz, req.ArtId, uc.Uid)
+	}
+	if err != nil {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+		a.l.Error("点赞失败", logger.Int64("uid", uc.Uid), logger.Int64("id", req.ArtId), logger.Error(err))
+		return
+	}
+	resp.SetGeneral(true, http.StatusOK, "ok")
+	resp.SetData(nil)
+
 }

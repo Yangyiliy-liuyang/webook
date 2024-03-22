@@ -9,10 +9,71 @@ import (
 
 type InteractiveDAO interface {
 	IncrReadCnt(ctx context.Context, biz string, bizId int64) error
+	InsertLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error
+	DeleteLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error
 }
 
 type GormInteractiveDAO struct {
 	db *gorm.DB
+}
+
+// InsertLikeInfo
+func (g *GormInteractiveDAO) InsertLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error {
+	now := time.Now().UnixMilli()
+	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Upsert
+		err := tx.Clauses(clause.OnConflict{
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"status": 1,
+				"utime":  now,
+			}),
+		}).Create(&UserLikeBiz{
+			Uid:    uid,
+			BizId:  bizId,
+			Biz:    biz,
+			Status: 1,
+			Ctime:  now,
+			Utime:  now,
+		}).Error
+		if err != nil {
+			return err
+		}
+		// Upsert likeCnt
+		return tx.Clauses(clause.OnConflict{
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"like_cnt": gorm.Expr("like_cnt + 1"),
+				"utime":    now,
+			}),
+		}).Create(&Interactive{
+			BizId:   bizId,
+			Biz:     biz,
+			LikeCnt: 1,
+			Ctime:   now,
+			Utime:   now,
+		}).Error
+	})
+}
+
+func (g *GormInteractiveDAO) DeleteLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error {
+	now := time.Now().UnixMilli()
+	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 必然存在，所以Update 即可
+		err := tx.Model(UserLikeBiz{}).
+			Where("uid = ? and biz_id = ? and biz = ? ", uid, bizId, biz).
+			Updates(map[string]interface{}{
+				"status": 0,
+				"utime":  now,
+			}).Error
+		if err != nil {
+			return err
+		}
+		// Update likeCnt
+		return tx.Model(&Interactive{}).Where("biz_id = ? and biz = ? ", bizId, biz).
+			Updates(map[string]interface{}{
+				"like_cnt": gorm.Expr("like_cnt - 1"),
+				"utime":    now,
+			}).Error
+	})
 }
 
 func (g *GormInteractiveDAO) IncrReadCnt(ctx context.Context, biz string, bizId int64) error {
@@ -54,4 +115,15 @@ type Interactive struct {
 	ShareCnt   int64  // 分享数
 	Ctime      int64
 	Utime      int64
+}
+
+type UserLikeBiz struct {
+	Id int64 `gorm:"primaryKey,autoIncrement"`
+	// 唯一索引 <bizId,biz>
+	Uid    int64  `gorm:"uniqueIndex:uid_biz_type_id"`
+	BizId  int64  `gorm:"uniqueIndex:uid_biz_type_id"`
+	Biz    string `gorm:"uniqueIndex:uid_biz_type_id"`
+	Status uint
+	Ctime  int64
+	Utime  int64
 }
