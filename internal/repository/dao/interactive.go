@@ -11,10 +11,64 @@ type InteractiveDAO interface {
 	IncrReadCnt(ctx context.Context, biz string, bizId int64) error
 	InsertLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error
 	DeleteLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error
+	InsertCollectionInfo(ctx context.Context,cb UserCollectionBiz) error
+	GetLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserLikeBiz, error)
+	GetCollectInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserCollectionBiz, error)
+	GetInteractiveInfo(ctx context.Context, biz string, bizId int64) (Interactive, error)
 }
 
 type GormInteractiveDAO struct {
 	db *gorm.DB
+}
+
+func (g *GormInteractiveDAO) GetInteractiveInfo(ctx context.Context, biz string, bizId int64) (Interactive, error) {
+	var res Interactive
+	err := g.db.WithContext(ctx).Model(&Interactive{}).
+        Where("biz = ? and biz_id = ? ", biz, bizId).
+        First(&res).Error
+    return res, err
+}
+
+func (g *GormInteractiveDAO) GetCollectInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserCollectionBiz, error) {
+	var res UserCollectionBiz
+	err := g.db.WithContext(ctx).Model(&UserCollectionBiz{}).
+		Where("biz = ? and biz_id = ? and uid = ? ", biz, bizId, uid).
+		First(&res).Error
+	return res, err
+}
+
+func (g *GormInteractiveDAO) GetLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserLikeBiz, error) {
+	var res UserLikeBiz
+	err := g.db.WithContext(ctx).Model(&UserLikeBiz{}).
+		Where("biz = ? and biz_id = ? and uid = ? and status = ?", biz, bizId, uid, 1).
+		First(&res).Error
+	return res, err
+}
+
+func (g *GormInteractiveDAO) InsertCollectionInfo(ctx context.Context,cb UserCollectionBiz) error {
+	now := time.Now().UnixMilli()
+	cb.Ctime  = now
+	cb.Utime  = now
+	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// insert
+		err := tx.Create(&cb).Error
+		if err != nil {
+			return err
+		}
+		// Upsert likeCnt
+		return tx.Clauses(clause.OnConflict{
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"collect_cnt": gorm.Expr("collect_cnt + 1"),
+				"utime":    now,
+			}),
+		}).Create(&Interactive{
+			BizId:   cb.BizId,
+			Biz:     cb.Biz,
+			CollectCnt: 1,
+			Ctime:   now,
+			Utime:   now,
+		}).Error
+	}
 }
 
 // InsertLikeInfo
@@ -107,7 +161,7 @@ type Interactive struct {
 	Id int64 `gorm:"primaryKey,autoIncrement"`
 	// 唯一索引 <bizId,biz>
 	BizId      int64  `gorm:"uniqueIndex:biz_type_id"`
-	Biz        string `gorm:"uniqueIndex:biz_type_id"`
+	Biz        string `gorm:"type:varchar(128);uniqueIndex:biz_type_id"`
 	ReadCnt    int64  // 阅读数
 	LikeCnt    int64  //点赞数
 	CollectCnt int64  //收藏数
@@ -119,11 +173,25 @@ type Interactive struct {
 
 type UserLikeBiz struct {
 	Id int64 `gorm:"primaryKey,autoIncrement"`
-	// 唯一索引 <bizId,biz>
+	// 唯一索引
 	Uid    int64  `gorm:"uniqueIndex:uid_biz_type_id"`
 	BizId  int64  `gorm:"uniqueIndex:uid_biz_type_id"`
-	Biz    string `gorm:"uniqueIndex:uid_biz_type_id"`
+	Biz    string `gorm:"type:varchar(128);uniqueIndex:uid_biz_type_id"`
 	Status uint
 	Ctime  int64
 	Utime  int64
+}
+
+type UserCollectionBiz struct {
+	Id int64 `gorm:"primaryKey,autoIncrement"`
+	// 唯一索引
+	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id"`
+	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id"`
+	Biz   string `gorm:"type:varchar(128);uniqueIndex:uid_biz_type_id"`
+	// 收藏夹id 可以进行冗余操作，加上收藏夹名字
+	// uid,biz,bizid只能收藏一次，
+	//也可以对uid,biz,bizid,cid进行联合索引,效果就是可以对同个文件在不同收藏夹进行收藏，b站那边是这样的
+	Cid   int64 `gorm:"index"`
+	Ctime int64
+	Utime int64
 }

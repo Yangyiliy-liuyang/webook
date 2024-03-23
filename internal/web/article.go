@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
 	"time"
@@ -44,6 +45,7 @@ func (a *ArticleHandler) RegisterRouter(server *gin.Engine) {
 	pub := g.Group("/pub")
 	pub.GET("/detail:id", a.PubDetail)
 	pub.GET("/like", a.Like)
+	pub.POST("/collection", a.Collection)
 }
 
 func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
@@ -248,6 +250,12 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		AuthorName string `json:"author_name"`
 		Ctime      int64  `json:"ctime"`
 		Utime      int64  `json:"utime"`
+
+		ReadCnt       int64 `json:"read_cnt"`
+		LikeCnt       int64 `json:"like_cnt"`
+		CollectCnt int64 `json:"collect_cnt"`
+		Liked         bool  `json:"liked"`
+		Collected     bool  `json:"collected"`
 	}
 	var data article
 	str := ctx.Param("id")
@@ -256,12 +264,28 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
 		return
 	}
-	art, err := a.svc.GetPubByArtId(ctx, artId)
-	if err != nil {
-		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
-		a.l.Error("获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
-		return
+	var (
+		eg   errgroup.Group
+		art  domain.Article
+		intr domain.Interactive
+	)
+	eg.Go(func() error {
+		var er error
+		art, er = a.svc.GetPubByArtId(ctx, artId)
+		return er
 	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	eg.Go(func() error {
+		var er error
+		intr, er = a.intrSvc.GetIntrByArtId(ctx, a.biz,artId,uc.Uid)
+		return er
+	}
+	if err := eg.Wait(); err != nil {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+        a.l.Error("获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
+        return
+	}
+
 	go func() {
 		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 		defer cancel()
@@ -279,6 +303,12 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		AuthorName: art.Author.Name,
 		Ctime:      art.Ctime,
 		Utime:      art.Utime,
+
+		ReadCnt:       intr.ReadCnt,
+        LikeCnt:       intr.LikeCnt,
+        CollectCnt: intr.CollectCnt,
+        Liked:         intr.Liked,
+        Collected:     intr.Collected,
 	}
 	resp.SetGeneral(true, http.StatusOK, "ok")
 	resp.SetData(data)
@@ -308,6 +338,32 @@ func (a *ArticleHandler) Like(ctx *gin.Context) {
 	if err != nil {
 		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
 		a.l.Error("点赞失败", logger.Int64("uid", uc.Uid), logger.Int64("id", req.ArtId), logger.Error(err))
+		return
+	}
+	resp.SetGeneral(true, http.StatusOK, "ok")
+	resp.SetData(nil)
+
+}
+
+func (a *ArticleHandler) Collection(ctx *gin.Context) {
+	resp := proctocol.RespGeneral{}
+	defer func() {
+		ctx.JSON(http.StatusOK, resp)
+	}()
+	type Req struct {
+		ArtId int64 `json:"art_id"`
+		Cid   int64 `json:"cid"`
+	}
+	var req Req
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		resp.SetGeneral(true, http.StatusBadRequest, "参数错误")
+		return
+	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	err := a.intrSvc.AddCollectionItem(ctx, a.biz, req.ArtId, req.Cid, uc.Uid)
+	if err != nil {
+		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
+		a.l.Error("收藏失败", logger.Int64("uid", uc.Uid), logger.Int64("id", req.ArtId), logger.Error(err))
 		return
 	}
 	resp.SetGeneral(true, http.StatusOK, "ok")
