@@ -16,6 +16,7 @@ gin
 + viper
 + etcd
 + Zap
++ sarama
 ## 目录结构
 ## 启动
 docker compose up
@@ -50,5 +51,6 @@ docker compose up
 ### 发帖功能
 分发制作库和线上库，依然MongoDB实现大文本存储，采用雪花算法生成主键，解决MongoDB无法生成自增主键的问题
 实现不同的缓存方案管理
+### Kafka消息队列
 
 
