@@ -251,11 +251,11 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		Ctime      int64  `json:"ctime"`
 		Utime      int64  `json:"utime"`
 
-		ReadCnt       int64 `json:"read_cnt"`
-		LikeCnt       int64 `json:"like_cnt"`
+		ReadCnt    int64 `json:"read_cnt"`
+		LikeCnt    int64 `json:"like_cnt"`
 		CollectCnt int64 `json:"collect_cnt"`
-		Liked         bool  `json:"liked"`
-		Collected     bool  `json:"collected"`
+		Liked      bool  `json:"liked"`
+		Collected  bool  `json:"collected"`
 	}
 	var data article
 	str := ctx.Param("id")
@@ -273,17 +273,18 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		var er error
 		art, er = a.svc.GetPubByArtId(ctx, artId)
 		return er
-	}
+	})
+
 	uc := ctx.MustGet("user").(ijwt.UserClaims)
 	eg.Go(func() error {
 		var er error
-		intr, er = a.intrSvc.GetIntrByArtId(ctx, a.biz,artId,uc.Uid)
+		intr, er = a.intrSvc.GetIntrByArtId(ctx, a.biz, artId, uc.Uid)
 		return er
-	}
+	})
 	if err := eg.Wait(); err != nil {
 		resp.SetGeneral(true, http.StatusInternalServerError, "系统内部错误")
-        a.l.Error("获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
-        return
+		a.l.Error("获取文章详情数据失败", logger.Int64("uid", art.Author.Id), logger.Int64("id", art.Id), logger.Error(err))
+		return
 	}
 
 	go func() {
@@ -304,11 +305,11 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		Ctime:      art.Ctime,
 		Utime:      art.Utime,
 
-		ReadCnt:       intr.ReadCnt,
-        LikeCnt:       intr.LikeCnt,
-        CollectCnt: intr.CollectCnt,
-        Liked:         intr.Liked,
-        Collected:     intr.Collected,
+		ReadCnt:    intr.ReadCnt,
+		LikeCnt:    intr.LikeCnt,
+		CollectCnt: intr.CollectCnt,
+		Liked:      intr.Liked,
+		Collected:  intr.Collected,
 	}
 	resp.SetGeneral(true, http.StatusOK, "ok")
 	resp.SetData(data)

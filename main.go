@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
@@ -14,11 +15,19 @@ import (
 func main() {
 	InitViperWatch()
 	initLogger()
+	initPrometheus()
 	server := InitWebServer()
 	server.GET("/hello", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "hello")
 	})
 	server.Run(":8080")
+}
+
+func initPrometheus() {
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8081", nil)
+	}()
 }
 
 func initLogger() {

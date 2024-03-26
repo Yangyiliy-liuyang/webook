@@ -11,7 +11,7 @@ type InteractiveDAO interface {
 	IncrReadCnt(ctx context.Context, biz string, bizId int64) error
 	InsertLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error
 	DeleteLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error
-	InsertCollectionInfo(ctx context.Context,cb UserCollectionBiz) error
+	InsertCollectionInfo(ctx context.Context, cb UserCollectionBiz) error
 	GetLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserLikeBiz, error)
 	GetCollectInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserCollectionBiz, error)
 	GetInteractiveInfo(ctx context.Context, biz string, bizId int64) (Interactive, error)
@@ -24,9 +24,9 @@ type GormInteractiveDAO struct {
 func (g *GormInteractiveDAO) GetInteractiveInfo(ctx context.Context, biz string, bizId int64) (Interactive, error) {
 	var res Interactive
 	err := g.db.WithContext(ctx).Model(&Interactive{}).
-        Where("biz = ? and biz_id = ? ", biz, bizId).
-        First(&res).Error
-    return res, err
+		Where("biz = ? and biz_id = ? ", biz, bizId).
+		First(&res).Error
+	return res, err
 }
 
 func (g *GormInteractiveDAO) GetCollectInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserCollectionBiz, error) {
@@ -45,10 +45,10 @@ func (g *GormInteractiveDAO) GetLikeInfo(ctx context.Context, biz string, bizId 
 	return res, err
 }
 
-func (g *GormInteractiveDAO) InsertCollectionInfo(ctx context.Context,cb UserCollectionBiz) error {
+func (g *GormInteractiveDAO) InsertCollectionInfo(ctx context.Context, cb UserCollectionBiz) error {
 	now := time.Now().UnixMilli()
-	cb.Ctime  = now
-	cb.Utime  = now
+	cb.Ctime = now
+	cb.Utime = now
 	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// insert
 		err := tx.Create(&cb).Error
@@ -59,16 +59,16 @@ func (g *GormInteractiveDAO) InsertCollectionInfo(ctx context.Context,cb UserCol
 		return tx.Clauses(clause.OnConflict{
 			DoUpdates: clause.Assignments(map[string]interface{}{
 				"collect_cnt": gorm.Expr("collect_cnt + 1"),
-				"utime":    now,
+				"utime":       now,
 			}),
 		}).Create(&Interactive{
-			BizId:   cb.BizId,
-			Biz:     cb.Biz,
+			BizId:      cb.BizId,
+			Biz:        cb.Biz,
 			CollectCnt: 1,
-			Ctime:   now,
-			Utime:   now,
+			Ctime:      now,
+			Utime:      now,
 		}).Error
-	}
+	})
 }
 
 // InsertLikeInfo

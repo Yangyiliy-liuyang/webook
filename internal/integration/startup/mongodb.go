@@ -23,7 +23,6 @@ func InitMongoDB() *mongo.Database {
 	if err != nil {
 		panic(err)
 	}
-	err = client.Ping(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
