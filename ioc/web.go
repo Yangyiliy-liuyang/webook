@@ -1,7 +1,6 @@
 package ioc
 
 import (
-	"context"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"strings"
@@ -9,6 +8,7 @@ import (
 	"webook/internal/web"
 	ijwt "webook/internal/web/jwt"
 	"webook/internal/web/middleware"
+	"webook/pkg/ginx/middleware/prometheus"
 	"webook/pkg/logger"
 )
 
@@ -41,13 +41,19 @@ func InitGinMiddleware(hdl ijwt.Handler, l logger.Logger) []gin.HandlerFunc {
 			},
 			MaxAge: 12 * time.Hour,
 		}),
+		(&prometheus.PrometheusBuilder{
+			Name: "http",
+		}).BuildResponseTime(),
+		(&prometheus.PrometheusBuilder{
+			Name: "http",
+		}).BuildActiveRequest(),
 		// todo 限流
-		middleware.NewLogMiddlewareBuilder(func(ctx context.Context, al middleware.AcessLog) {
-			l.Debug("", logger.Field{
-				Key:   "req",
-				Value: al,
-			})
-		}).AllowReqBody().AllowRespBody().Build(),
+		//middleware.NewLogMiddlewareBuilder(func(ctx context.Context, al middleware.AcessLog) {
+		//	l.Debug("", logger.Field{
+		//		Key:   "req",
+		//		Value: al,
+		//	})
+		//}).AllowReqBody().AllowRespBody().Build(),
 		middleware.NewLoginJWTMilddlewareBuilder(hdl).CheckLoginJWT(),
 	}
 }

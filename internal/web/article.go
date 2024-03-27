@@ -269,13 +269,13 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		art  domain.Article
 		intr domain.Interactive
 	)
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
 	eg.Go(func() error {
 		var er error
-		art, er = a.svc.GetPubByArtId(ctx, artId)
+		art, er = a.svc.GetPubByArtId(ctx, artId, uc.Uid)
 		return er
 	})
 
-	uc := ctx.MustGet("user").(ijwt.UserClaims)
 	eg.Go(func() error {
 		var er error
 		intr, er = a.intrSvc.GetIntrByArtId(ctx, a.biz, artId, uc.Uid)

@@ -44,7 +44,7 @@ func InitWebServer() *gin.Engine {
 	articleDAO := dao.NewGormArticleDAO(db)
 	articleCache := cache.NewArticleRedisCache(cmdable)
 	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache)
-	articleService := service.NewArticleService(articleRepository)
+	articleService := service.NewArticleService(articleRepository, logger)
 	interactiveDAO := dao.NewGormInteractiveDAO(db)
 	interactiveCache := cache.NewInteractiveCache(cmdable)
 	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)

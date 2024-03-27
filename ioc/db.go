@@ -28,6 +28,8 @@ func InitDB(l logger.Logger) *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
+	db.Use(prometheus.New(prometheus.Config{}))
+
 	err = dao.InitTables(db)
 	if err != nil {
 		panic(err)

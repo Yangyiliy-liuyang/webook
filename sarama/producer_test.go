@@ -20,7 +20,7 @@ func TestSyncProducer(t *testing.T) {
 	defer producer.Close()
 
 	msg := &sarama.ProducerMessage{
-		Topic: "test",
+		Topic: "test_topic",
 		Value: sarama.StringEncoder("这是一条消息"),
 		// 生产者和消费者都可以使用Headers来传递额外的信息
 		Headers: []sarama.RecordHeader{
@@ -49,7 +49,7 @@ func TestAsyncProducer(t *testing.T) {
 	defer producer.Close()
 	msg := producer.Input()
 	msg <- &sarama.ProducerMessage{
-		Topic: "test",
+		Topic: "test_topic",
 		Value: sarama.StringEncoder("这是一条消息"),
 		Headers: []sarama.RecordHeader{
 			{

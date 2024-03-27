@@ -7,7 +7,20 @@ func Error(err error) Field {
 	}
 }
 
+func String(key string, val string) Field {
+	return Field{
+		key,
+		val,
+	}
+}
+
 func Int64(key string, val int64) Field {
+	return Field{
+		key,
+		val,
+	}
+}
+func Int32(key string, val int32) Field {
 	return Field{
 		key,
 		val,
