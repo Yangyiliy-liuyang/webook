@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	//"gorm.io/plugin/prometheus"
 	"webook/internal/repository/dao"
 	"webook/pkg/logger"
 )
@@ -28,8 +29,20 @@ func InitDB(l logger.Logger) *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-	db.Use(prometheus.New(prometheus.Config{}))
-
+	// 接入 prometheus
+	//err = db.Use(prometheus.New(prometheus.Config{
+	//	DBName: "webook",
+	//	// 每 15 秒采集一些数据
+	//	RefreshInterval: 15,
+	//	MetricsCollector: []prometheus.MetricsCollector{
+	//		&prometheus.MySQL{
+	//			VariableNames: []string{"Threads_running"},
+	//		},
+	//	}, // user defined metrics
+	//}))
+	//if err != nil {
+	//	panic(err)
+	//}
 	err = dao.InitTables(db)
 	if err != nil {
 		panic(err)
