@@ -18,7 +18,6 @@ type ArticleRepository interface {
 	SyncStatus(ctx context.Context, artId int64, uid int64, status domain.ArticleStatus) error
 	GetByAuthor(ctx context.Context, limit, offset int, uid int64) ([]domain.Article, error)
 	GetByArtId(ctx context.Context, artId int64) (domain.Article, error)
-
 	GetPubByArtId(ctx context.Context, artId int64) (domain.Article, error)
 }
 
